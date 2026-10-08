@@ -11,7 +11,7 @@ This is a restyled build of an existing tool. `original.html` is the upstream pa
 | Path | What it is |
 |---|---|
 | `original.html` | Upstream source (unchanged) |
-| `theme/styles.css` | Graphite & Brass theme |
+| `theme/styles.css` | Midnight Cobalt theme |
 | `theme/body.html` | Top bar, Studies drawer, chart markup |
 | `theme/fund.html` | Fundamentals panel |
 | `theme/ui.js` | Drawer, timeframe and live price wiring |

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Graphite & Brass edition of the market tool.
+"""Build the Midnight Cobalt edition of the market tool.
 
 Reads the untouched original (original.html), swaps in the new head
 styles, markup and fundamentals panel from this folder, re-colours the
@@ -26,10 +26,11 @@ OUT_LOCAL = ROOT / (APP_SLUG + ".html")
 OUT_DIR = ROOT / "public-site"
 
 # ---------------------------------------------------------------- palette
-UP, DN = "#5BA88E", "#C9614B"
-BONE, MUTED, FAINT = "#E4DFD3", "#8A857A", "#5E5A53"
-STEEL, PLUM, SAND, COPPER, ROSE, OLIVE = "#7E9BC4", "#A68BBF", "#D2B27A", "#C98A5A", "#C27C8C", "#9DB067"
-BG, GRID, LINE, LINE2 = "#141519", "#1D1E23", "#2A2B31", "#3A3B42"
+# Midnight Cobalt
+UP, DN = "#3A86FF", "#F0506E"
+BONE, MUTED, FAINT = "#E8EDF5", "#7B8698", "#4A5366"
+STEEL, PLUM, SAND, COPPER, ROSE, OLIVE = "#8CC2FF", "#9D8CFF", "#E6B85C", "#F08A5D", "#F27BA6", "#7FD1A0"
+BG, GRID, LINE, LINE2 = "#07080B", "#10131A", "#1C212B", "#2A3140"
 
 HEX = {}
 def _hex(target, *sources):
@@ -64,13 +65,13 @@ _trip(UP, (16, 185, 129))
 _trip(BONE, (255, 255, 255))
 _trip(SAND, (255, 165, 0), (245, 158, 11), (234, 179, 8), (255, 255, 0), (255, 235, 59), (255, 234, 0), (255, 215, 0))
 _trip(COPPER, (249, 115, 22))
-_trip("#6E7888", (41, 108, 255))      # volume-profile / footprint cell base: slate
+_trip("#4B5468", (41, 108, 255))      # volume-profile / footprint cell base: cool gray
 _trip(STEEL, (0, 229, 255), (0, 255, 255), (59, 130, 246), (41, 98, 255), (41, 138, 255),
       (50, 80, 255), (100, 120, 255), (100, 140, 255), (0, 0, 255))
 _trip(PLUM, (255, 0, 255), (168, 85, 247), (167, 139, 250), (138, 43, 226))
 _trip(ROSE, (236, 72, 153), (255, 51, 102))
-_trip("#78BEA5", (52, 211, 153))     # light verdigris
-_trip("#DEA094", (252, 165, 165))    # light oxide
+_trip("#7FB2FF", (52, 211, 153))     # light up-blue
+_trip("#F59AAB", (252, 165, 165))    # light crimson
 _trip(MUTED, (156, 163, 175), (100, 116, 139))
 _trip(BG, (6, 10, 18), (7, 11, 20), (10, 15, 28), (10, 15, 25), (8, 12, 20), (2, 6, 23), (15, 23, 42))
 _trip(LINE, (30, 41, 59), (55, 65, 81))
@@ -194,7 +195,7 @@ def main():
     html = "\n".join([
         head,
         "    <title>%s</title>" % APP_NAME,
-        '    <meta name="theme-color" content="#141519">',
+        '    <meta name="theme-color" content="#07080B">',
         '    <link rel="icon" href="favicon.svg" type="image/svg+xml">',
         '    <link rel="preconnect" href="https://fonts.googleapis.com">',
         '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',

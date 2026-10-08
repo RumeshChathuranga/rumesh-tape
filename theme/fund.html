@@ -2,7 +2,7 @@
     <style>
         #fund-overlay {
             display: none; position: fixed; inset: 0; z-index: 9000;
-            background: rgba(10,10,12,.6);
+            background: rgba(0,0,0,.6);
             align-items: center; justify-content: center; padding: 20px;
         }
         #fund-panel {
@@ -35,13 +35,13 @@
         #fund-panel .card { background: var(--panel); padding: 18px 20px; }
         #fund-panel .signal-card {
             grid-column: 1 / -1; display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;
-            padding: 22px 20px; border-left: 3px solid var(--brass);
+            padding: 22px 20px; border-left: 3px solid var(--accent);
         }
         #fund-panel .score { font: 600 40px/1 var(--mono); font-variant-numeric: tabular-nums; }
         #fund-panel .signal-text { font: 600 16px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
         #fund-panel .signal-note { color: var(--muted); font-size: 12px; margin: 0; flex-basis: 100%; }
         #fund-panel .strong-buy, #fund-panel .buy { border-left-color: var(--up); color: var(--up); }
-        #fund-panel .hold { border-left-color: var(--brass); color: var(--brass); }
+        #fund-panel .hold { border-left-color: var(--accent); color: var(--accent); }
         #fund-panel .sell, #fund-panel .avoid { border-left-color: var(--down); color: var(--down); }
         #fund-panel .flex-row {
             display: flex; justify-content: space-between; gap: 12px;
