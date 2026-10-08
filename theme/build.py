@@ -30,7 +30,7 @@ OUT_DIR = ROOT / "public-site"
 UP, DN = "#10B981", "#EF4444"     # market direction: classic green / red
 BONE, MUTED, FAINT = "#E8EDF5", "#7B8698", "#4A5366"
 STEEL, PLUM, SAND, COPPER, ROSE, OLIVE = "#8CC2FF", "#9D8CFF", "#E6B85C", "#F08A5D", "#F27BA6", "#7FD1A0"
-BG, GRID, LINE, LINE2 = "#07080B", "#10131A", "#1C212B", "#2A3140"
+BG, GRID, LINE, LINE2 = "#151924", "#1E2330", "#262C3A", "#333B4D"
 
 HEX = {}
 def _hex(target, *sources):
@@ -195,7 +195,7 @@ def main():
     html = "\n".join([
         head,
         "    <title>%s</title>" % APP_NAME,
-        '    <meta name="theme-color" content="#07080B">',
+        '    <meta name="theme-color" content="#0D1017">',
         '    <link rel="icon" href="favicon.svg" type="image/svg+xml">',
         '    <link rel="preconnect" href="https://fonts.googleapis.com">',
         '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
