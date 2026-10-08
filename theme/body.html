@@ -35,6 +35,9 @@
                 <button id="vwap-btn" class="tg" title="VWAP with bands">VWAP</button>
                 <button id="cvd-btn" class="tg" title="Cumulative volume delta">CVD</button>
                 <button id="vol-btn" class="tg" title="Volume bars">Volume</button>
+                <button id="whale-btn" class="tg" title="Large aggressive trades as bubbles">Whale</button>
+                <button id="glow-btn" class="tg" title="Highlight large resting orders">Glow</button>
+                <button id="stats-table-btn" class="tg" title="Per-bar stats table under the chart">Stats</button>
                 <button id="studies-btn" class="tg boxed" onclick="openSheet('ind')" title="All studies">Studies <span class="count" id="studies-count" data-n="0"></span></button>
             </div>
 
@@ -43,7 +46,6 @@
                 <button id="imb-btn" class="tg">IMB</button>
                 <button id="stk-btn" class="tg">STK</button>
                 <button id="heat-btn" class="tg">HEAT</button>
-                <button id="whale-btn" class="tg">WHALE</button>
                 <button id="sizedelta-btn" class="tg">SIZE</button>
                 <button id="vpt-btn" class="tg">VPT</button>
                 <button id="domliq-btn" class="tg">DOM-LIQ</button>
@@ -57,8 +59,6 @@
                 <button id="rekt-btn" class="tg">REKT</button>
                 <button id="autofvg-btn" class="tg">FVG</button>
                 <button id="vwba-btn" class="tg">VWBA</button>
-                <button id="glow-btn" class="tg">GLOW</button>
-                <button id="stats-table-btn" class="tg">STATS</button>
                 <button id="chart-type-btn" class="tg">CANDLE</button>
                 <button id="snr-btn" class="tg">SNR</button>
                 <button id="sk-btn" class="tg">SK</button>
@@ -91,7 +91,7 @@
             <div class="bar-group">
                 <button id="jump-24h-btn" class="tg small" title="Scroll back 24 hours">−24h</button>
                 <button id="go-live-btn" class="tg boxed small active" title="Jump to the live bar"><span class="dot"></span>Live</button>
-                <button id="fund-btn" class="tg small" onclick="openFundamental()" title="Fundamentals for this coin">Fundamentals</button>
+                <button id="fund-btn" class="tg small" onclick="openFundamental()" title="Fundamentals for this coin"><span class="label-long">Fundamentals</span><span class="label-short">Fund</span></button>
             </div>
         </div>
         <div class="price-readout" id="price-readout" data-dir="up">
@@ -161,7 +161,7 @@
                 <div class="sheet-grid">
                     <div class="sheet-toggle" data-key="showDOMLiq" data-btn="domliq-btn"><span class="st-name">Book liquidity</span><span class="st-desc">Live resting orders by price</span></div>
                     <div class="sheet-toggle" data-key="showDOMProf" data-btn="domprof-btn"><span class="st-name">Book profile</span><span class="st-desc">Live order volume profile</span></div>
-                    <div class="sheet-toggle" data-key="showGlowWalls" data-btn="glow-btn"><span class="st-name">Book walls</span><span class="st-desc">Highlight unusually large orders</span></div>
+                    <div class="sheet-toggle" data-key="showGlowWalls" data-btn="glow-btn"><span class="st-name">Glow walls</span><span class="st-desc">Highlight unusually large orders</span></div>
                     <div class="sheet-toggle" data-key="showVWBA" data-btn="vwba-btn"><span class="st-name">VWBA / VWAA</span><span class="st-desc">Volume-weighted bid and ask average</span></div>
                     <div class="sheet-toggle" data-key="showBBADelta" data-btn="bbadelta-btn"><span class="st-name">Best bid/ask delta</span><span class="st-desc">Top-of-book pressure oscillator</span></div>
                     <div class="sheet-toggle" data-key="showIceberg" data-btn="iceberg-btn"><span class="st-name">Icebergs</span><span class="st-desc">Hidden size refilling at a price</span></div>

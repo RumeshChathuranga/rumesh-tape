@@ -2,7 +2,7 @@
     'use strict';
     var $ = function (id) { return document.getElementById(id); };
     var rows = Array.prototype.slice.call(document.querySelectorAll('#tab-ind .sheet-toggle[data-key]'));
-    var PINNED = ['foot-btn', 'delta-btn', 'vwap-btn', 'cvd-btn', 'vol-btn'];
+    var PINNED = ['foot-btn', 'delta-btn', 'vwap-btn', 'cvd-btn', 'vol-btn', 'whale-btn', 'glow-btn', 'stats-table-btn'];
     var NOT_COUNTED = { showDrawTools: 1, chartType: 1 };
 
     function settingOn(key) {
