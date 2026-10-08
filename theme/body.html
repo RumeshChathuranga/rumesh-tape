@@ -1,0 +1,389 @@
+<body>
+    <header>
+        <div class="brand" title="{{APP_NAME}}">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2v12M12 4v10" stroke="#8A857A"/><rect x="2" y="5" width="4" height="6" rx=".6" fill="#5BA88E"/><rect x="10" y="6" width="4" height="5" rx=".6" fill="#C9614B"/><path d="M1 15h14" stroke="#C8A25E" stroke-width="1.4"/></svg>
+            <span>{{APP_NAME}}</span>
+        </div>
+        <div class="toolset">
+            <div class="bar-group keep-mobile" style="position:relative; padding-left:0;">
+                <input type="text" id="symbol-input" class="atas-input" value="BTCUSDT" spellcheck="false" autocomplete="off" aria-label="Symbol" title="Symbol — press Enter to load">
+                <div id="recent-coins" class="recent-coins-dropdown"></div>
+            </div>
+            <div class="bar-group">
+                <span class="bar-label">Tick</span>
+                <input type="text" id="tick-input" class="atas-input" value="5.0" aria-label="Tick size">
+                <button id="auto-tick-btn" class="tg boxed small" title="Pick the tick size automatically">Auto</button>
+                <select id="density-select" class="atas-select" aria-label="Aggregation"></select>
+            </div>
+            <div class="bar-group">
+                <div class="seg" id="tf-seg" role="group" aria-label="Timeframe">
+                    <button data-tf="1m">1m</button><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h">1h</button><button data-tf="2h">2h</button><button data-tf="4h">4h</button><button data-tf="1d">1d</button>
+                </div>
+                <select id="tf-select" class="atas-select" hidden>
+                    <option value="1m">1m</option>
+                    <option value="5m">5m</option>
+                    <option value="15m">15m</option>
+                    <option value="1h">1h</option>
+                    <option value="2h">2h</option>
+                    <option value="4h">4h</option>
+                    <option value="1d">1d</option>
+                </select>
+            </div>
+            <div class="bar-group">
+                <button id="foot-btn" class="tg" title="Bid × ask footprint">Footprint</button>
+                <button id="delta-btn" class="tg" title="Delta histogram">Delta</button>
+                <button id="vwap-btn" class="tg" title="VWAP with bands">VWAP</button>
+                <button id="cvd-btn" class="tg" title="Cumulative volume delta">CVD</button>
+                <button id="vol-btn" class="tg" title="Volume bars">Volume</button>
+                <button id="studies-btn" class="tg boxed" onclick="openSheet('ind')" title="All studies">Studies <span class="count" id="studies-count" data-n="0"></span></button>
+            </div>
+
+            <!-- Engine-bound toggles. Kept for their click handlers; the Studies drawer drives them. -->
+            <div id="legacy-toggles" hidden>
+                <button id="imb-btn" class="tg">IMB</button>
+                <button id="stk-btn" class="tg">STK</button>
+                <button id="heat-btn" class="tg">HEAT</button>
+                <button id="whale-btn" class="tg">WHALE</button>
+                <button id="sizedelta-btn" class="tg">SIZE</button>
+                <button id="vpt-btn" class="tg">VPT</button>
+                <button id="domliq-btn" class="tg">DOM-LIQ</button>
+                <button id="domprof-btn" class="tg">DOM-PROF</button>
+                <button id="mms-btn" class="tg">MMS</button>
+                <button id="news-btn" class="tg">NEWS</button>
+                <button id="liqpool-btn" class="tg">LIQ-POOL</button>
+                <button id="iceberg-btn" class="tg">ICEBERG</button>
+                <button id="pace-btn" class="tg">PACE</button>
+                <button id="wde-btn" class="tg">WDE</button>
+                <button id="rekt-btn" class="tg">REKT</button>
+                <button id="autofvg-btn" class="tg">FVG</button>
+                <button id="vwba-btn" class="tg">VWBA</button>
+                <button id="glow-btn" class="tg">GLOW</button>
+                <button id="stats-table-btn" class="tg">STATS</button>
+                <button id="chart-type-btn" class="tg">CANDLE</button>
+                <button id="snr-btn" class="tg">SNR</button>
+                <button id="sk-btn" class="tg">SK</button>
+                <button id="ew-btn" class="tg">EW</button>
+                <button id="wyc-btn" class="tg">WYC</button>
+                <button id="smc-btn" class="tg">SMC</button>
+                <button id="crt-btn" class="tg">CRT</button>
+                <button id="sessions-btn" class="tg">SESS</button>
+                <button id="day-open-btn" class="tg">D-OPEN</button>
+                <button id="daily-tpo-btn" class="tg">D-TPO</button>
+                <button id="daily-vp-btn" class="tg">D-VOL</button>
+                <button id="naked-poc-btn" class="tg">N-POC</button>
+                <button id="abs-btn" class="tg">ABS</button>
+                <button id="hvbuy-btn" class="tg">HV-BUY</button>
+                <button id="hvsell-btn" class="tg">HV-SELL</button>
+                <button id="pivot-btn" class="tg">PIVOT</button>
+                <button id="avwap-btn" class="tg">AVWAP</button>
+                <button id="spoof-btn" class="tg">SPOOF</button>
+                <button id="oi-btn" class="tg">OI</button>
+                <button id="oit-btn" class="tg">OIT</button>
+                <button id="oiwall-btn" class="tg" onclick="toggleOIWall()">OI-WALL</button>
+                <button id="lvn-btn" class="tg" onclick="sheetToggle('showLVN','lvn-btn',this)">LVN</button>
+                <button id="tpo-lvn-btn" class="tg" onclick="sheetToggle('showTPOLVN','tpo-lvn-btn',this)">TPO-LVN</button>
+                <button id="theat-btn" class="tg">MTF</button>
+                <button id="shape-btn" class="tg">SHAPE</button>
+                <button id="bbadelta-btn" class="tg">BBA</button>
+            </div>
+
+            <div class="bar-spacer"></div>
+            <div class="bar-group">
+                <button id="jump-24h-btn" class="tg small" title="Scroll back 24 hours">−24h</button>
+                <button id="go-live-btn" class="tg boxed small active" title="Jump to the live bar"><span class="dot"></span>Live</button>
+                <button id="fund-btn" class="tg small" onclick="openFundamental()" title="Fundamentals for this coin">Fundamentals</button>
+            </div>
+        </div>
+        <div class="price-readout" id="price-readout" data-dir="up">
+            <div class="pr-meta" id="pr-meta">BTCUSDT · 1m</div>
+            <div id="hdr-p" class="price-badge-live">—</div>
+        </div>
+        <button id="mobile-menu-btn" onclick="openSheet('ind')" aria-label="Studies"></button>
+    </header>
+
+    <!-- Bottom navigation (phones) -->
+    <div id="bottom-nav">
+        <button class="bnav-btn active" id="bnav-chart" onclick="switchTab('chart')">
+            <svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 3 8-9"/><path d="M3 21h18"/></svg>
+            <span class="bnav-label">Chart</span>
+        </button>
+        <button class="bnav-btn" id="bnav-ind" onclick="openSheet('ind')">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+            <span class="bnav-label">Studies</span>
+        </button>
+        <button class="bnav-btn" id="bnav-tf" onclick="openSheet('tf')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span class="bnav-label">Timeframe</span>
+        </button>
+        <button class="bnav-btn" id="bnav-sym" onclick="openSheet('sym')">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <span class="bnav-label">Symbol</span>
+        </button>
+    </div>
+
+    <div id="sheet-overlay" style="display:none;" onclick="closeSheet()"></div>
+
+    <!-- Studies drawer: right panel on desktop, bottom sheet on phones -->
+    <div id="bottom-sheet" role="dialog" aria-label="Studies">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+            <div class="sheet-title" id="sheet-title">Studies</div>
+            <button class="sheet-close" onclick="closeSheet()" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div class="sheet-search" id="sheet-search">
+            <input type="search" id="study-search" placeholder="Search studies" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="sheet-content">
+
+            <div id="tab-ind">
+                <div class="sheet-empty" id="study-empty">No study matches that search.</div>
+
+                <div class="sheet-section-title">Order flow</div>
+                <div class="sheet-grid">
+                    <div class="sheet-toggle" data-key="showFootprint" data-btn="foot-btn"><span class="st-name">Footprint</span><span class="st-desc">Bid × ask volume at each price</span></div>
+                    <div class="sheet-toggle" data-key="showImb" data-btn="imb-btn"><span class="st-name">Imbalance</span><span class="st-desc">Diagonal bid/ask imbalance</span></div>
+                    <div class="sheet-toggle" data-key="showStk" data-btn="stk-btn"><span class="st-name">Stacked imbalance</span><span class="st-desc">Imbalances stacked across prices</span></div>
+                    <div class="sheet-toggle" data-key="showDelta" data-btn="delta-btn"><span class="st-name">Delta</span><span class="st-desc">Buy minus sell volume per bar</span></div>
+                    <div class="sheet-toggle" data-key="showCVD" data-btn="cvd-btn"><span class="st-name">Cumulative delta</span><span class="st-desc">Running buy/sell difference</span></div>
+                    <div class="sheet-toggle" data-key="showHeat" data-btn="heat-btn"><span class="st-name">Liquidity heatmap</span><span class="st-desc">Resting book depth over time</span></div>
+                    <div class="sheet-toggle" data-key="showWhale" data-btn="whale-btn"><span class="st-name">Whale trades</span><span class="st-desc">Large aggressive prints as bubbles</span></div>
+                    <div class="sheet-toggle" data-key="showSizeDelta" data-btn="sizedelta-btn"><span class="st-name">Trade size delta</span><span class="st-desc">Delta split by trade size</span></div>
+                    <div class="sheet-toggle" data-key="showVPT" data-btn="vpt-btn"><span class="st-name">Volume per tick</span><span class="st-desc">Up and down volume per price move</span></div>
+                    <div class="sheet-toggle" data-key="showPaceTape" data-btn="pace-btn"><span class="st-name">Tape speed</span><span class="st-desc">Pace of executed trades</span></div>
+                    <div class="sheet-toggle" data-key="showAbsorption" data-btn="abs-btn"><span class="st-name">Absorption</span><span class="st-desc">Heavy volume with little price progress</span></div>
+                    <div class="sheet-toggle" data-key="showHVBuyZone" data-btn="hvbuy-btn"><span class="st-name">High-volume buying</span><span class="st-desc">Zones of concentrated buying</span></div>
+                    <div class="sheet-toggle" data-key="showHVSellZone" data-btn="hvsell-btn"><span class="st-name">High-volume selling</span><span class="st-desc">Zones of concentrated selling</span></div>
+                    <div class="sheet-toggle" data-key="showWDE" data-btn="wde-btn"><span class="st-name">Wick delta exhaustion</span><span class="st-desc">Delta that fails at the wick</span></div>
+                    <div class="sheet-toggle" data-key="showShape" data-btn="shape-btn"><span class="st-name">Footprint shape</span><span class="st-desc">P, b and D profile classifier</span></div>
+                </div>
+
+                <div class="sheet-section-title">Order book</div>
+                <div class="sheet-grid">
+                    <div class="sheet-toggle" data-key="showDOMLiq" data-btn="domliq-btn"><span class="st-name">Book liquidity</span><span class="st-desc">Live resting orders by price</span></div>
+                    <div class="sheet-toggle" data-key="showDOMProf" data-btn="domprof-btn"><span class="st-name">Book profile</span><span class="st-desc">Live order volume profile</span></div>
+                    <div class="sheet-toggle" data-key="showGlowWalls" data-btn="glow-btn"><span class="st-name">Book walls</span><span class="st-desc">Highlight unusually large orders</span></div>
+                    <div class="sheet-toggle" data-key="showVWBA" data-btn="vwba-btn"><span class="st-name">VWBA / VWAA</span><span class="st-desc">Volume-weighted bid and ask average</span></div>
+                    <div class="sheet-toggle" data-key="showBBADelta" data-btn="bbadelta-btn"><span class="st-name">Best bid/ask delta</span><span class="st-desc">Top-of-book pressure oscillator</span></div>
+                    <div class="sheet-toggle" data-key="showIceberg" data-btn="iceberg-btn"><span class="st-name">Icebergs</span><span class="st-desc">Hidden size refilling at a price</span></div>
+                    <div class="sheet-toggle" data-key="showSpoofDetector" data-btn="spoof-btn"><span class="st-name">Spoofing</span><span class="st-desc">Large orders pulled before fill</span></div>
+                </div>
+
+                <div class="sheet-section-title">Structure</div>
+                <div class="sheet-grid">
+                    <div class="sheet-toggle" data-key="showSNR" data-btn="snr-btn"><span class="st-name">Support &amp; resistance</span><span class="st-desc">Key reaction levels</span></div>
+                    <div class="sheet-toggle" data-key="showSMC" data-btn="smc-btn"><span class="st-name">Smart money concepts</span><span class="st-desc">BOS, MSS, IDM and order blocks</span></div>
+                    <div class="sheet-toggle" data-key="showAutoFVG" data-btn="autofvg-btn"><span class="st-name">Fair value gaps</span><span class="st-desc">Auto FVG and order blocks</span></div>
+                    <div class="sheet-toggle" data-key="showWyckoff" data-btn="wyc-btn"><span class="st-name">Wyckoff</span><span class="st-desc">Accumulation and distribution entries</span></div>
+                    <div class="sheet-toggle" data-key="showEW" data-btn="ew-btn"><span class="st-name">Elliott wave</span><span class="st-desc">Wave count with Fibonacci targets</span></div>
+                    <div class="sheet-toggle" data-key="showSK" data-btn="sk-btn"><span class="st-name">SK system</span><span class="st-desc">Sequence and correction zones</span></div>
+                    <div class="sheet-toggle" data-key="showCRT" data-btn="crt-btn"><span class="st-name">Candle range theory</span><span class="st-desc">CRT entry setups</span></div>
+                </div>
+
+                <div class="sheet-section-title">Profiles &amp; levels</div>
+                <div class="sheet-grid">
+                    <div class="sheet-toggle" data-key="showVWAP" data-btn="vwap-btn"><span class="st-name">VWAP</span><span class="st-desc">With deviation bands</span></div>
+                    <div class="sheet-toggle" data-key="showAVWAP" data-btn="avwap-btn"><span class="st-name">Session VWAP</span><span class="st-desc">Anchored to London and New York</span></div>
+                    <div class="sheet-toggle" data-key="showSessions" data-btn="sessions-btn"><span class="st-name">Session profiles</span><span class="st-desc">Asia, London and New York ranges</span></div>
+                    <div class="sheet-toggle" data-key="showDailyTPO" data-btn="daily-tpo-btn"><span class="st-name">Daily TPO</span><span class="st-desc">Time-at-price profile per day</span></div>
+                    <div class="sheet-toggle" data-key="showDailyVP" data-btn="daily-vp-btn"><span class="st-name">Daily volume profile</span><span class="st-desc">Volume-at-price per day</span></div>
+                    <div class="sheet-toggle" data-key="showNakedPOC" data-btn="naked-poc-btn"><span class="st-name">Naked POC</span><span class="st-desc">Untested points of control</span></div>
+                    <div class="sheet-toggle" data-key="showLVN" data-btn="lvn-btn"><span class="st-name">Low-volume nodes</span><span class="st-desc">Thin areas in the profile</span></div>
+                    <div class="sheet-toggle" data-key="showTPOLVN" data-btn="tpo-lvn-btn"><span class="st-name">TPO single prints</span><span class="st-desc">Prices visited only once</span></div>
+                    <div class="sheet-toggle" data-key="showDayOpen" data-btn="day-open-btn"><span class="st-name">Daily open</span><span class="st-desc">Line at today's open price</span></div>
+                    <div class="sheet-toggle" data-key="showPivots" data-btn="pivot-btn"><span class="st-name">Pivot points</span><span class="st-desc">Classic daily pivots</span></div>
+                </div>
+
+                <div class="sheet-section-title">Derivatives &amp; sentiment</div>
+                <div class="sheet-grid">
+                    <div class="sheet-toggle" data-key="showOI" data-btn="oi-btn"><span class="st-name">Open interest</span><span class="st-desc">Overlay on the price chart</span></div>
+                    <div class="sheet-toggle" data-key="showOIPanel" data-btn="oit-btn"><span class="st-name">Open interest pane</span><span class="st-desc">Separate pane under the chart</span></div>
+                    <div class="sheet-toggle" id="st-oiwall" data-key="showOIWall" data-btn="oiwall-btn"><span class="st-name">Open interest wall</span><span class="st-desc">Price with the heaviest open interest</span></div>
+                    <div class="sheet-toggle" data-key="showRekt" data-btn="rekt-btn"><span class="st-name">Liquidations</span><span class="st-desc">Live liquidation bubbles</span></div>
+                    <div class="sheet-toggle" data-key="showLiqPool" data-btn="liqpool-btn"><span class="st-name">Liquidation pools</span><span class="st-desc">Estimated liquidation clusters</span></div>
+                    <div class="sheet-toggle" data-key="showMMS" data-btn="mms-btn"><span class="st-name">Microstructure score</span><span class="st-desc">With the Fear &amp; Greed index</span></div>
+                    <div class="sheet-toggle" id="st-news" data-key="showNews" data-btn="news-btn"><span class="st-name">News</span><span class="st-desc">Headlines with sentiment</span></div>
+                    <div class="sheet-toggle" data-key="showTFHeatmap" data-btn="theat-btn"><span class="st-name">Multi-timeframe delta</span><span class="st-desc">Delta direction across timeframes</span></div>
+                </div>
+
+                <div class="sheet-section-title">Display</div>
+                <div class="sheet-grid">
+                    <div class="sheet-toggle" data-key="showVol" data-btn="vol-btn"><span class="st-name">Volume bars</span><span class="st-desc">Volume under each candle</span></div>
+                    <div class="sheet-toggle" data-key="showStatsTable" data-btn="stats-table-btn"><span class="st-name">Stats table</span><span class="st-desc">Per-bar summary under the chart</span></div>
+                    <div class="sheet-toggle" id="st-chart" data-key="chartType" data-btn="chart-type-btn"><span class="st-name">Line chart</span><span class="st-desc">Show closes as a line instead of candles</span></div>
+                    <div class="sheet-toggle" id="st-draw" data-key="showDrawTools"><span class="st-name">Drawing toolbar</span><span class="st-desc">Tools on the left edge of the chart</span></div>
+                    <div class="sheet-toggle action" onclick="closeSheet(); openFundamental();"><span class="st-name">Fundamentals</span><span class="st-desc">Market, supply and positioning data</span></div>
+                </div>
+
+                <div class="sheet-section-title">Thresholds</div>
+                <div class="sheet-fields">
+                    <label>Whale size (BTC)<input type="text" id="whale-thres-input" class="atas-input" value="10.0"></label>
+                    <label>Medium trade ($)<input type="text" id="size-med-input" class="atas-input" value="1000"></label>
+                    <label>Large trade ($)<input type="text" id="size-large-input" class="atas-input" value="10000"></label>
+                    <label>Whale trade ($)<input type="text" id="size-whale-input" class="atas-input" value="100000"></label>
+                </div>
+                <div class="sheet-fields" style="margin-top:6px;"><span class="st-desc" style="grid-column:1/-1; color:var(--faint); font-size:11px;">Press Enter in a field to apply it.</span></div>
+
+                <div class="mobile-only">
+                    <div class="sheet-section-title">Drawing</div>
+                    <div class="sheet-grid">
+                        <div class="sheet-toggle action" onclick="setMobileTool('cursor', this)"><span class="st-name">Cursor</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('hline', this)"><span class="st-name">Horizontal line</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('line', this)"><span class="st-name">Trend line</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('box', this)"><span class="st-name">Box</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('long', this)"><span class="st-name">Long position</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('short', this)"><span class="st-name">Short position</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('delta-prof', this)"><span class="st-name">Delta profile</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('vol-prof', this)"><span class="st-name">Volume profile</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('tpo', this)"><span class="st-name">TPO profile</span></div>
+                        <div class="sheet-toggle action" onclick="setMobileTool('avwap', this)"><span class="st-name">Anchored VWAP</span></div>
+                        <div class="sheet-toggle action" onclick="drawings.pop(); closeSheet();"><span class="st-name">Undo last drawing</span></div>
+                        <div class="sheet-toggle action danger" onclick="drawings = []; closeSheet();"><span class="st-name">Clear all drawings</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-tf" style="display:none;">
+                <div class="sheet-section-title">Timeframe</div>
+                <div class="sheet-tf-row">
+                    <div class="sheet-tf-btn" onclick="setMobileTF('1m',this)">1m</div>
+                    <div class="sheet-tf-btn" onclick="setMobileTF('5m',this)">5m</div>
+                    <div class="sheet-tf-btn" onclick="setMobileTF('15m',this)">15m</div>
+                    <div class="sheet-tf-btn" onclick="setMobileTF('1h',this)">1h</div>
+                    <div class="sheet-tf-btn" onclick="setMobileTF('2h',this)">2h</div>
+                    <div class="sheet-tf-btn" onclick="setMobileTF('4h',this)">4h</div>
+                    <div class="sheet-tf-btn" onclick="setMobileTF('1d',this)">1d</div>
+                </div>
+            </div>
+
+            <div id="tab-sym" style="display:none;">
+                <div class="sheet-section-title">Symbol</div>
+                <form id="mobile-sym-form" class="sheet-sym-row">
+                    <input type="search" class="sheet-sym-input" id="mobile-sym-input" placeholder="BTCUSDT" spellcheck="false" autocomplete="off">
+                    <button type="button" class="sheet-sym-go" onclick="changeMobileSymbol()">Load</button>
+                </form>
+                <div class="sheet-section-title">Quick pick</div>
+                <div class="sheet-tf-row">
+                    <div class="sheet-tf-btn" onclick="quickSym('BTCUSDT')">BTC</div>
+                    <div class="sheet-tf-btn" onclick="quickSym('ETHUSDT')">ETH</div>
+                    <div class="sheet-tf-btn" onclick="quickSym('SOLUSDT')">SOL</div>
+                    <div class="sheet-tf-btn" onclick="quickSym('XRPUSDT')">XRP</div>
+                    <div class="sheet-tf-btn" onclick="quickSym('BNBUSDT')">BNB</div>
+                    <div class="sheet-tf-btn" onclick="quickSym('DOGEUSDT')">DOGE</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <main>
+        <div id="viewport">
+            <div id="drawing-toolbar">
+                <button class="draw-btn active" id="tool-cursor" title="Cursor"><svg viewBox="0 0 24 24"><path d="M6 4l12 7-5.5 1.5L10 18z"/></svg></button>
+                <button class="draw-btn" id="tool-hline" title="Horizontal line"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="1.6"/></svg></button>
+                <button class="draw-btn" id="tool-line" title="Trend line"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.6"/><circle cx="19" cy="5" r="1.6"/></svg></button>
+                <button class="draw-btn" id="tool-box" title="Rectangle"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
+                <button class="draw-btn" id="tool-long" title="Long position"><svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></button>
+                <button class="draw-btn" id="tool-short" title="Short position"><svg viewBox="0 0 24 24"><path d="M4 7l5 5 4-3 7 8"/><path d="M15 17h5v-5"/></svg></button>
+                <div class="sep"></div>
+                <button class="draw-btn" id="tool-delta-prof" title="Fixed-range delta profile"><svg viewBox="0 0 24 24"><path d="M12 4v16"/><path d="M12 7h6M8 11h4M12 15h7M10 19h2"/></svg></button>
+                <button class="draw-btn" id="tool-vol-prof" title="Fixed-range volume profile"><svg viewBox="0 0 24 24"><path d="M4 4v16"/><path d="M4 7h9M4 11h15M4 15h11M4 19h6"/></svg></button>
+                <button class="draw-btn" id="tool-tpo" title="Fixed-range TPO profile">TPO</button>
+                <button class="draw-btn" id="tool-avwap" title="Anchored VWAP"><svg viewBox="0 0 24 24"><path d="M5 18c3-1 5-8 9-9s4 3 6 2"/><circle cx="5" cy="18" r="1.8"/></svg></button>
+                <div class="sep"></div>
+                <button class="draw-btn" id="tool-undo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a5 5 0 010 10h-3"/></svg></button>
+                <button class="draw-btn" id="tool-clear" title="Clear all drawings"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+            </div>
+            <div id="drawing-settings">
+                <div id="drag-handle" class="ds-btn" title="Drag"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r=".8"/><circle cx="15" cy="6" r=".8"/><circle cx="9" cy="12" r=".8"/><circle cx="15" cy="12" r=".8"/><circle cx="9" cy="18" r=".8"/><circle cx="15" cy="18" r=".8"/></svg></div>
+                <input type="color" id="drawing-color-input" title="Color">
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                    <span class="ds-label">Opacity</span>
+                    <input type="range" id="drawing-opacity-input" min="0" max="1" step="0.05">
+                </div>
+                <div class="ds-sep"></div>
+                <button id="settings-drawing-btn" class="ds-btn" title="Profile settings"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+                <button id="del-drawing-btn" class="ds-btn" title="Delete this drawing"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+            </div>
+            <div class="status-ohlc" id="ohlc-info"></div>
+            <div id="loader">Loading market data</div>
+            <div style="flex:1; position:relative; min-height:0;"><canvas id="main-c"></canvas></div>
+            <div id="oi-resizer" style="display:none;"></div>
+            <div id="oi-panel-wrap" style="display:none;"><canvas id="oi-c"></canvas></div>
+            <div id="stats-panel-wrap"><canvas id="stats-c"></canvas></div>
+            <div id="sizedelta-resizer"></div>
+            <div id="sizedelta-panel-wrap"><canvas id="sizedelta-c"></canvas></div>
+            <div id="tf-heatmap-hud"></div>
+            <div id="news-hud"></div>
+            <button id="replay-btn" title="Bar replay">Replay</button>
+
+            <div id="replay-panel">
+                <div class="rp-title">Replay</div>
+                <button id="replay-select-btn" class="draw-btn" title="Pick the start bar"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0112 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/></svg></button>
+                <button id="replay-prev-btn" class="draw-btn" title="Step back"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+                <button id="replay-play-btn" class="draw-btn" title="Play / pause">▶</button>
+                <button id="replay-next-btn" class="draw-btn" title="Step forward"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+                <select id="replay-speed-select" class="atas-select">
+                    <option value="1000">1 s / bar</option>
+                    <option value="500">0.5 s / bar</option>
+                    <option value="200">0.2 s / bar</option>
+                    <option value="100">0.1 s / bar</option>
+                </select>
+                <button id="replay-exit-btn" class="draw-btn" title="Exit replay"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+            <div id="bottom-axis"><canvas id="time-c"></canvas></div>
+        </div>
+        <div id="scale-right">
+            <canvas id="scale-c"></canvas>
+            <div id="price-badge">0.00</div>
+        </div>
+    </main>
+
+    <!-- Fixed-range volume profile settings -->
+    <div id="frvp-settings-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Volume profile</span>
+                <span class="modal-close" onclick="closeFrvpSettings()">&times;</span>
+            </div>
+            <div class="modal-tabs">
+                <div class="modal-tab active">Inputs</div>
+            </div>
+            <div class="modal-body">
+                <div class="settings-row">
+                    <label>Rows layout</label>
+                    <select id="frvp-rows-layout">
+                        <option value="number">Number of rows</option>
+                        <option value="ticks">Ticks per row</option>
+                    </select>
+                </div>
+                <div class="settings-row">
+                    <label>Row size</label>
+                    <input type="number" id="frvp-row-size" value="150">
+                </div>
+                <div class="settings-row">
+                    <label>Volume</label>
+                    <select id="frvp-volume-mode">
+                        <option value="total">Total</option>
+                        <option value="updown">Up / down</option>
+                    </select>
+                </div>
+                <div class="settings-row">
+                    <label>Value area (%)</label>
+                    <input type="number" id="frvp-va-volume" value="70">
+                </div>
+                <div class="settings-row">
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" id="frvp-extend-right"> Extend right
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span></span>
+                <div style="display:flex; gap:8px;">
+                    <button class="modal-btn cancel" onclick="closeFrvpSettings()">Cancel</button>
+                    <button class="modal-btn ok" onclick="saveFrvpSettings()">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
