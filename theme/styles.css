@@ -1,7 +1,7 @@
         /* ==========================================================
            Midnight Cobalt
-           Near-black surfaces, one cobalt accent for state, blue / crimson
-           for market direction.
+           Near-black surfaces, one cobalt accent for state, classic
+           green / red for market direction.
            ========================================================== */
         :root {
             --bg: #07080B;
@@ -13,8 +13,8 @@
             --text-dim: #B3BDCC;
             --muted: #7B8698;
             --faint: #4A5366;
-            --up: #3A86FF;
-            --down: #F0506E;
+            --up: #10B981;
+            --down: #EF4444;
             --accent: #4C8DFF;
             --accent-soft: rgba(76, 141, 255, 0.14);
             --accent-line: rgba(76, 141, 255, 0.45);
@@ -317,8 +317,8 @@
             width: 48px; height: 38px; background: var(--bg);
             border-radius: 3px; border: 1px solid var(--line);
         }
-        .tf-cell.bull { border-color: rgba(58,134,255,.55); background: rgba(58,134,255,.08); }
-        .tf-cell.bear { border-color: rgba(240,80,110,.55); background: rgba(240,80,110,.08); }
+        .tf-cell.bull { border-color: rgba(16,185,129,.55); background: rgba(16,185,129,.08); }
+        .tf-cell.bear { border-color: rgba(239,68,68,.55); background: rgba(239,68,68,.08); }
         .tf-cell.neut { border-color: rgba(230,184,92,.4); }
         .tf-label { font: 500 9px var(--mono); color: var(--muted); margin-bottom: 2px; }
         .tf-status { font: 600 10px var(--mono); }

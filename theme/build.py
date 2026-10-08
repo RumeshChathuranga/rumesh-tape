@@ -27,7 +27,7 @@ OUT_DIR = ROOT / "public-site"
 
 # ---------------------------------------------------------------- palette
 # Midnight Cobalt
-UP, DN = "#3A86FF", "#F0506E"
+UP, DN = "#10B981", "#EF4444"     # market direction: classic green / red
 BONE, MUTED, FAINT = "#E8EDF5", "#7B8698", "#4A5366"
 STEEL, PLUM, SAND, COPPER, ROSE, OLIVE = "#8CC2FF", "#9D8CFF", "#E6B85C", "#F08A5D", "#F27BA6", "#7FD1A0"
 BG, GRID, LINE, LINE2 = "#07080B", "#10131A", "#1C212B", "#2A3140"
@@ -70,8 +70,8 @@ _trip(STEEL, (0, 229, 255), (0, 255, 255), (59, 130, 246), (41, 98, 255), (41, 1
       (50, 80, 255), (100, 120, 255), (100, 140, 255), (0, 0, 255))
 _trip(PLUM, (255, 0, 255), (168, 85, 247), (167, 139, 250), (138, 43, 226))
 _trip(ROSE, (236, 72, 153), (255, 51, 102))
-_trip("#7FB2FF", (52, 211, 153))     # light up-blue
-_trip("#F59AAB", (252, 165, 165))    # light crimson
+_trip("#34D399", (52, 211, 153))     # light green
+_trip("#FCA5A5", (252, 165, 165))    # light red
 _trip(MUTED, (156, 163, 175), (100, 116, 139))
 _trip(BG, (6, 10, 18), (7, 11, 20), (10, 15, 28), (10, 15, 25), (8, 12, 20), (2, 6, 23), (15, 23, 42))
 _trip(LINE, (30, 41, 59), (55, 65, 81))
