@@ -73,6 +73,17 @@
             var t = el.previousElementSibling;
             if (t && t.classList.contains('sheet-section-title')) t.style.display = q ? 'none' : '';
         });
+        // Open the collapsed Extra section while searching, then put it back
+        var extra = document.querySelector('#tab-ind .sheet-extra');
+        if (extra) {
+            if (q) {
+                if (extra.dataset.wasOpen === undefined) extra.dataset.wasOpen = extra.open ? '1' : '0';
+                extra.open = true;
+            } else if (extra.dataset.wasOpen !== undefined) {
+                extra.open = extra.dataset.wasOpen === '1';
+                delete extra.dataset.wasOpen;
+            }
+        }
         $('study-empty').style.display = shown ? 'none' : 'block';
     });
 
@@ -128,9 +139,117 @@
         }
     }
 
+    // ------------------------------------------------------------ saved state
+    // Studies, timeframe and trade-size thresholds are saved globally; the
+    // whale threshold (in coins) and drawings are saved per symbol. The engine
+    // prelude reads the timeframe back before the engine starts.
+    var STORE = 'rumeshTape.v1', DRAW_PREFIX = 'rumeshTape.v1.drawings.';
+    var SIZE_INPUTS = { med: 'size-med-input', large: 'size-large-input', whale: 'size-whale-input' };
+    function readJSON(key, fallback) {
+        try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
+        catch (e) { return fallback; }
+    }
+    function writeJSON(key, value) {
+        try { localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)); } catch (e) {}
+    }
+    var saved = readJSON(STORE, {});
+    if (!saved.whale) saved.whale = {};
+    var restored = false, lastSaved = '', drawSym = null, lastDrawJSON = '';
+
+    // Trade-size thresholds are read straight from the inputs on every trade.
+    Object.keys(SIZE_INPUTS).forEach(function (k) {
+        var el = $(SIZE_INPUTS[k]);
+        if (!el) return;
+        if (saved.sizes && saved.sizes[k]) el.value = saved.sizes[k];
+    });
+    var whaleInput = $('whale-thres-input');
+    if (whaleInput) whaleInput.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' || typeof SETTINGS === 'undefined') return;
+        var v = parseFloat(whaleInput.value);
+        if (isFinite(v) && v > 0) { saved.whale[SETTINGS.symbol] = v; saveState(true); }
+    });
+
+    function engineReady() {
+        if (typeof STATES === 'undefined' || typeof SETTINGS === 'undefined') return false;
+        var st = STATES[SETTINGS.symbol], loader = $('loader');
+        return !!(st && st.bars && st.bars.length && loader && loader.style.display === 'none');
+    }
+    function drawingsJSON() {
+        // Skip engine caches (keys starting with "_") so only the drawing itself is kept.
+        return JSON.stringify(drawings, function (k, v) { return k.charAt(0) === '_' ? undefined : v; });
+    }
+    function loadDrawings(sym) {
+        var list = readJSON(DRAW_PREFIX + sym, []);
+        drawings.length = 0;
+        Array.prototype.push.apply(drawings, Array.isArray(list) ? list : []);
+        if (typeof selectedDrawing !== 'undefined') selectedDrawing = null;
+        drawSym = sym;
+        lastDrawJSON = drawingsJSON();
+    }
+    function saveDrawings() {
+        if (!drawSym || typeof drawings === 'undefined') return;
+        var j = drawingsJSON();
+        if (j !== lastDrawJSON) { lastDrawJSON = j; writeJSON(DRAW_PREFIX + drawSym, j); }
+    }
+    function saveState(force) {
+        if (!restored && !force) return;
+        var studies = {};
+        rows.forEach(function (row) { studies[row.dataset.key] = settingOn(row.dataset.key); });
+        var sizes = {};
+        Object.keys(SIZE_INPUTS).forEach(function (k) { var el = $(SIZE_INPUTS[k]); if (el) sizes[k] = el.value; });
+        var state = { tf: SETTINGS.tf, studies: restored ? studies : saved.studies, sizes: sizes, whale: saved.whale };
+        var j = JSON.stringify(state);
+        if (j !== lastSaved) { lastSaved = j; saved = state; writeJSON(STORE, j); }
+    }
+    function restoreOnce() {
+        restored = true;
+        var want = saved.studies || {};
+        rows.forEach(function (row) {
+            var key = row.dataset.key;
+            if (Object.prototype.hasOwnProperty.call(want, key) && settingOn(key) !== !!want[key]) toggleStudy(row);
+        });
+        loadDrawings(SETTINGS.symbol);
+    }
+    function syncSaved() {
+        if (typeof SETTINGS === 'undefined') return;
+        if (!restored) { if (engineReady()) restoreOnce(); else return; }
+        // Symbol changed: file the old drawings away and bring up this symbol's.
+        if (drawSym !== SETTINGS.symbol) { saveDrawings(); loadDrawings(SETTINGS.symbol); }
+        // init() resets the whale threshold to the symbol default; put the saved one back.
+        var w = saved.whale[SETTINGS.symbol];
+        if (w != null && SETTINGS.whaleThres !== w) {
+            SETTINGS.whaleThres = w;
+            if (whaleInput) whaleInput.value = w;
+        }
+        saveDrawings();
+        saveState();
+    }
+    Object.keys(SIZE_INPUTS).forEach(function (k) {
+        var el = $(SIZE_INPUTS[k]);
+        if (el) ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { saveState(); }); });
+    });
+    window.addEventListener('pagehide', function () { if (restored) { saveDrawings(); saveState(); } });
+
+    // ------------------------------------------------------------ data badge
+    // Footprint cells are only real from the first live trade; before that the
+    // engine estimates them from candles. Say so in the top bar.
+    var liveSince = {};
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function syncBadge() {
+        var b = $('data-badge');
+        if (!b || typeof STATES === 'undefined' || typeof SETTINGS === 'undefined') return;
+        var st = STATES[SETTINGS.symbol], cache = st && st.tradeCache;
+        if (!cache || !cache.length) { liveSince[SETTINGS.symbol] = null; b.hidden = true; return; }
+        if (!liveSince[SETTINGS.symbol]) liveSince[SETTINGS.symbol] = cache[0].t;
+        var d = new Date(liveSince[SETTINGS.symbol]);
+        var txt = 'Real from ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        if (b.textContent !== txt) b.textContent = txt;
+        b.hidden = false;
+    }
+
     // The engine clears .active on every .draw-btn and .sheet-toggle when a
     // drawing tool is picked; re-assert study state on a light interval.
-    function tick() { syncStudies(); syncTF(); syncMeta(); }
+    function tick() { syncStudies(); syncTF(); syncMeta(); syncSaved(); syncBadge(); }
     tick();
     setInterval(tick, 600);
 })();

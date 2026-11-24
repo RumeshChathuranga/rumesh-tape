@@ -1,3 +1,6 @@
 .vercel
 __pycache__/
 .env*.local
+
+# Private notes: keep out of the public repo
+docs/
