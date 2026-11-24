@@ -15,7 +15,7 @@ BUILT = ROOT / "public-site" / "index.html"
 
 # Studies taken out of the drawer (their hidden engine buttons must remain).
 REMOVED = {
-    "showSNR": "snr-btn", "showSMC": "smc-btn", "showAutoFVG": "autofvg-btn",
+    "showSNR": "snr-btn", "showSMC": "smc-btn",
     "showWyckoff": "wyc-btn", "showEW": "ew-btn", "showSK": "sk-btn",
     "showCRT": "crt-btn", "showPivots": "pivot-btn", "showMMS": "mms-btn",
     "showNews": "news-btn",
@@ -86,6 +86,14 @@ class BuiltPage(unittest.TestCase):
         extra = extra[:extra.index("</details>")]
         for key in PARKED:
             self.assertIn('data-key="%s"' % key, extra, key)
+
+    def test_fair_value_gaps_in_drawer(self):
+        # FVGs come from candle highs and lows only, so the fake footprint
+        # history doesn't affect them; the engine hides a gap once price trades into it.
+        d = drawer(self.html)
+        self.assertIn('data-key="showAutoFVG"', d)
+        self.assertIn("Fair value gaps", d)
+        self.assertNotIn("order blocks", d)
 
     def test_honest_labels(self):
         d = drawer(self.html)
