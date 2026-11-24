@@ -20,6 +20,8 @@ export interface Settings {
     bigPrintUsd: number | 'auto';
     fvg: FvgSetting;
     showMitigated: boolean;
+    showScalp: boolean;
+    showLevels: boolean;
 }
 
 export const DEFAULTS: Settings = {
@@ -33,6 +35,8 @@ export const DEFAULTS: Settings = {
     bigPrintUsd: 'auto',
     fvg: 'all',
     showMitigated: false,
+    showScalp: true,
+    showLevels: true,
 };
 
 const pick = <T>(v: unknown, ok: (v: unknown) => boolean, fallback: T): T => (ok(v) ? (v as T) : fallback);
@@ -53,6 +57,8 @@ export function loadSettings(storage: Storage): Settings {
         bigPrintUsd: pick(raw.bigPrintUsd, (v) => v === 'auto' || (typeof v === 'number' && v > 0 && Number.isFinite(v)), DEFAULTS.bigPrintUsd),
         fvg: pick(raw.fvg, (v) => FVG.includes(v as FvgSetting), DEFAULTS.fvg),
         showMitigated: pick(raw.showMitigated, (v) => typeof v === 'boolean', DEFAULTS.showMitigated),
+        showScalp: pick(raw.showScalp, (v) => typeof v === 'boolean', DEFAULTS.showScalp),
+        showLevels: pick(raw.showLevels, (v) => typeof v === 'boolean', DEFAULTS.showLevels),
     };
 }
 

@@ -13,7 +13,7 @@ export class UnknownSymbolError extends Error {
 
 export interface Rest {
     exchangeInfo(symbol: string): Promise<{ tickSize: number }>;
-    klines(symbol: string, tf: Timeframe, limit?: number): Promise<Candle[]>;
+    klines(symbol: string, tf: Timeframe, limit?: number, startTime?: number): Promise<Candle[]>;
     aggTradesLatest(symbol: string, signal?: AbortSignal): Promise<AggTrade[]>;
     aggTradesFrom(symbol: string, fromId: number, signal?: AbortSignal): Promise<AggTrade[]>;
     depth(symbol: string, signal?: AbortSignal): Promise<DepthSnapshot>;
@@ -47,8 +47,9 @@ export function createRest(
             if (!s || !tick) throw new UnknownSymbolError(symbol);
             return { tickSize: +tick };
         },
-        async klines(symbol, tf, limit = 1000) {
-            const rows = await get<unknown[][]>(`/fapi/v1/klines?symbol=${symbol}&interval=${tf}&limit=${limit}`, klineWeight(limit));
+        async klines(symbol, tf, limit = 1000, startTime) {
+            const from = startTime === undefined ? '' : `&startTime=${startTime}`;
+            const rows = await get<unknown[][]>(`/fapi/v1/klines?symbol=${symbol}&interval=${tf}&limit=${limit}${from}`, klineWeight(limit));
             return rows.map((k) => ({ t: +(k[0] as number), o: +(k[1] as string), h: +(k[2] as string), l: +(k[3] as string), c: +(k[4] as string), v: +(k[5] as string), buyV: +(k[9] as string) }));
         },
         async aggTradesLatest(symbol, signal) {

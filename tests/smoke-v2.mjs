@@ -51,6 +51,17 @@ async function main() {
         assert(ok, 'best bid not below best ask');
     });
 
+    await check('scalp panel shows the window and sizes a trade', async () => {
+        await b.waitFor(`/US open window \\d\\d:\\d\\d/.test(document.getElementById('scalp').textContent)`, 20000, 'window line');
+        await b.evaluate(`(() => {
+            const inputs = [...document.querySelectorAll('#scalp .sp-field input')];
+            ['1000', '0.5', '60000', '59910'].forEach((v, i) => { inputs[i].value = v; inputs[i].dispatchEvent(new Event('input', { bubbles: true })); });
+        })()`);
+        const out = await b.evaluate(`document.querySelector('#scalp .sp-out').textContent`);
+        assert(/Position2,27\d\.\d\d USDT/.test(out), 'calculator output: ' + out);
+        assert(out.includes('60225'), 'target missing: ' + out);
+    });
+
     await check('switching cell mode renders without errors', async () => {
         for (const label of ['Delta', 'Volume', 'Bid × Ask']) {
             await b.evaluate(`[...document.querySelectorAll('header button')].find(x => x.textContent === ${JSON.stringify(label)}).click()`);

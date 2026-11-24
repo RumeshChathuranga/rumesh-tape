@@ -21,6 +21,8 @@ export class Topbar {
     private mode: HTMLDivElement;
     private cvd: HTMLButtonElement;
     private book: HTMLButtonElement;
+    private levels: HTMLButtonElement;
+    private scalp: HTMLButtonElement;
     private history: HTMLSelectElement;
     private big: HTMLSelectElement;
     private badge: HTMLSpanElement;
@@ -64,6 +66,10 @@ export class Topbar {
         this.cvd.addEventListener('click', () => this.onChange({ showCvd: !this.s.showCvd }));
         this.book = el('button', { class: 'tg', title: 'Resting orders (synced order book)' }, 'Book');
         this.book.addEventListener('click', () => this.onChange({ showBook: !this.s.showBook }));
+        this.levels = el('button', { class: 'tg', title: 'VWAP, previous-day value area, naked POCs and strategy zones' }, 'Levels');
+        this.levels.addEventListener('click', () => this.onChange({ showLevels: !this.s.showLevels }));
+        this.scalp = el('button', { class: 'tg', title: 'Scalp plan: window, zones, setups, size and alerts' }, 'Scalp');
+        this.scalp.addEventListener('click', () => this.onChange({ showScalp: !this.s.showScalp }));
 
         this.big = el('select', { 'aria-label': 'Big trades', title: 'Market orders shown as bubbles. Auto: the largest 0.5% of market orders over $10k in the last hour, at least $50k' });
         this.big.appendChild(el('option', { value: 'auto' }, 'Big: Auto'));
@@ -91,10 +97,11 @@ export class Topbar {
             group(this.sym, this.symErr),
             group(this.tf),
             group(this.rows, this.mode),
-            group(this.cvd, this.book, this.big),
+            group(this.cvd, this.book, this.levels, this.big),
             group(this.fvg, this.bias),
             group(this.history, this.badge),
             el('div', { class: 'spacer' }),
+            this.scalp,
             el('a', { class: 'classic', href: '/' }, 'Classic'),
             this.price,
         );
@@ -108,6 +115,8 @@ export class Topbar {
         this.mode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === s.mode));
         this.cvd.classList.toggle('on', s.showCvd);
         this.book.classList.toggle('on', s.showBook);
+        this.levels.classList.toggle('on', s.showLevels);
+        this.scalp.classList.toggle('on', s.showScalp);
         this.history.value = String(s.historyHours);
         this.big.value = String(s.bigPrintUsd);
         this.fvg.value = s.fvg;

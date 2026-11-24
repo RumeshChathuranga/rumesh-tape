@@ -1,6 +1,7 @@
 import { BarCache } from '../model/bars';
 import { autoRowMult, baseBin } from '../model/bins';
 import { sessionCvd } from '../model/cvd';
+import { dailyProfiles, nakedPocs, sessionVwap, type Profile } from '../model/levels';
 import { MinuteStore, type StoreSnapshot } from '../model/minutes';
 import { TF_MS, type AggTrade, type Candle, type Timeframe } from '../model/types';
 import { backfillOlder, fillGap } from './backfill';
@@ -17,8 +18,11 @@ const SAVE_EVERY_MS = 60_000;
 const RESYNC_MIN_MS = 3_000;
 const MAX_BACKFILL_TRIES = 5;
 /** Higher timeframes loaded for context (fair value gaps), refreshed by REST. */
-const HTF: Timeframe[] = ['1h', '4h'];
+const HTF: Timeframe[] = ['15m', '1h', '4h'];
 const HTF_REFRESH_MS = 60_000;
+const DAY = 86_400_000;
+/** Days of 1-minute candles loaded for daily profiles and naked POCs. */
+const CONTEXT_DAYS = 5;
 
 export interface SessionStatus {
     phase: 'loading' | 'backfilling' | 'live' | 'error';
@@ -63,9 +67,14 @@ export class MarketSession {
     tickSize = 0;
     bin = 0;
     candlesVersion = 0;
-    /** 1h and 4h candles when the chart timeframe is lower. */
+    /** 15m, 1h and 4h candles when the chart timeframe is lower. */
     htf: Partial<Record<Timeframe, Candle[]>> = {};
     htfVersion = 0;
+    /** Levels built from 1-minute candles (estimates: candles don't say where inside them volume traded). */
+    context: { candles1m: Candle[]; profiles: Profile[]; vwap: number[]; nakedPocs: number[]; bin: number } =
+        { candles1m: [], profiles: [], vwap: [], nakedPocs: [], bin: 0 };
+    contextVersion = 0;
+    private pastDays: Candle[] = [];
 
     private readonly ac = new AbortController();
     private readonly now: () => number;
@@ -119,7 +128,11 @@ export class MarketSession {
         this.status.phase = 'backfilling';
         this.changed();
         if (cache) this.saveTimer = setInterval(() => void this.save(), SAVE_EVERY_MS);
-        if (Object.keys(this.htf).length) this.htfTimer = setInterval(() => void this.loadHtf().then(() => this.changed()), HTF_REFRESH_MS);
+        this.htfTimer = setInterval(() => {
+            void this.loadHtf().then(() => this.changed());
+            void this.loadContext(false);
+        }, HTF_REFRESH_MS);
+        void this.loadContext(true);
         void this.backfill(historyStart);
     }
 
@@ -148,6 +161,29 @@ export class MarketSession {
             this.multMemo = { v: this.candles.length, mult: autoRowMult(this.candles, this.bin) };
         }
         return this.multMemo.mult;
+    }
+
+    /** Today's 1-minute candles (and, on `full`, the previous days), then profiles, VWAP and naked POCs. */
+    private async loadContext(full: boolean) {
+        const today = Math.floor(this.now() / DAY) * DAY;
+        try {
+            if (full) {
+                const past: Candle[] = [];
+                for (let d = CONTEXT_DAYS; d >= 1; d--) past.push(...await this.o.rest.klines(this.symbol, '1m', 1440, today - d * DAY));
+                this.pastDays = past.filter((c) => c.t < today);
+            }
+            if (this.stopped) return;
+            const todayC = (await this.o.rest.klines(this.symbol, '1m', 1440, today)).filter((c) => c.t >= today);
+            const seen = new Set<number>();
+            const all = [...this.pastDays, ...todayC].filter((c) => !seen.has(c.t) && seen.add(c.t)).sort((a, b) => a.t - b.t);
+            const bin = this.bin * 5;
+            const profiles = dailyProfiles(all, bin);
+            this.context = { candles1m: all, profiles, vwap: sessionVwap(todayC), nakedPocs: nakedPocs(profiles, all), bin };
+            this.contextVersion++;
+            this.changed();
+        } catch (e) {
+            if (!isAbort(e)) console.warn('context candles failed', e);
+        }
     }
 
     private async loadHtf() {

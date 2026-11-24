@@ -129,3 +129,24 @@ describe('network failures', () => {
         await s.stop();
     });
 });
+
+describe('context levels', () => {
+    it('loads 1-minute context candles in the background and builds profiles and VWAP', async () => {
+        const s = make(fakeRest().rest);
+        await s.start();
+        await vi.waitFor(() => expect(s.contextVersion).toBeGreaterThan(0));
+        expect(s.context.profiles.length).toBeGreaterThan(0);
+        expect(s.context.vwap.length).toBeGreaterThan(0);
+        expect(s.context.bin).toBe(25);   // base bin 5 for BTC x 5
+        await s.stop();
+    });
+});
+
+describe('15m context gaps', () => {
+    it('loads 15m candles for a 1m chart', async () => {
+        const s = new MarketSession({ symbol: 'BTCUSDT', tf: '1m', historyHours: 0.1, rest: fakeRest().rest, WebSocketImpl: FakeWS as unknown as typeof WebSocket, now: () => NOW, onChange: () => {} });
+        await s.start();
+        expect(Object.keys(s.htf).sort()).toEqual(['15m', '1h', '4h']);
+        await s.stop();
+    });
+});

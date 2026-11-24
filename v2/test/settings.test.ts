@@ -41,4 +41,10 @@ describe('settings', () => {
         const bad = loadSettings(memoryStorage({ 'rumeshTape.v2': JSON.stringify({ fvg: 'x', showMitigated: 'yes' }) }));
         expect(bad).toMatchObject({ fvg: 'all', showMitigated: false });
     });
+
+    it('shows the scalp panel and levels by default', () => {
+        expect(DEFAULTS).toMatchObject({ showScalp: true, showLevels: true });
+        const bad = loadSettings(memoryStorage({ 'rumeshTape.v2': JSON.stringify({ showScalp: 1, showLevels: false }) }));
+        expect(bad).toMatchObject({ showScalp: true, showLevels: false });
+    });
 });
