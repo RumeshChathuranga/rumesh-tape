@@ -141,3 +141,12 @@ describe('context levels', () => {
         await s.stop();
     });
 });
+
+describe('15m context gaps', () => {
+    it('loads 15m candles for a 1m chart', async () => {
+        const s = new MarketSession({ symbol: 'BTCUSDT', tf: '1m', historyHours: 0.1, rest: fakeRest().rest, WebSocketImpl: FakeWS as unknown as typeof WebSocket, now: () => NOW, onChange: () => {} });
+        await s.start();
+        expect(Object.keys(s.htf).sort()).toEqual(['15m', '1h', '4h']);
+        await s.stop();
+    });
+});

@@ -18,7 +18,7 @@ const SAVE_EVERY_MS = 60_000;
 const RESYNC_MIN_MS = 3_000;
 const MAX_BACKFILL_TRIES = 5;
 /** Higher timeframes loaded for context (fair value gaps), refreshed by REST. */
-const HTF: Timeframe[] = ['1h', '4h'];
+const HTF: Timeframe[] = ['15m', '1h', '4h'];
 const HTF_REFRESH_MS = 60_000;
 const DAY = 86_400_000;
 /** Days of 1-minute candles loaded for daily profiles and naked POCs. */
@@ -67,7 +67,7 @@ export class MarketSession {
     tickSize = 0;
     bin = 0;
     candlesVersion = 0;
-    /** 1h and 4h candles when the chart timeframe is lower. */
+    /** 15m, 1h and 4h candles when the chart timeframe is lower. */
     htf: Partial<Record<Timeframe, Candle[]>> = {};
     htfVersion = 0;
     /** Levels built from 1-minute candles (estimates: candles don't say where inside them volume traded). */
