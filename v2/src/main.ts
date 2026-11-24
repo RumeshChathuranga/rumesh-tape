@@ -2,9 +2,11 @@ import './ui/styles.css';
 import { TradeCache } from './data/cache';
 import { createRest, UnknownSymbolError } from './data/rest';
 import { MarketSession } from './data/session';
+import { findFvgs, fvgBias, type Fvg } from './model/fvg';
 import { printThreshold } from './model/prints';
 import { TF_MS } from './model/types';
 import { Chart, type ChartSource } from './render/chart';
+import { drawFvgs } from './render/fvg';
 import { loadSettings, saveSettings, type Settings } from './ui/settings';
 import { Topbar } from './ui/topbar';
 
@@ -35,14 +37,31 @@ function sourceFor(s: MarketSession): ChartSource {
     };
 }
 
-// "Auto" big trades: the largest 0.5% of the last hour's market orders, refreshed every 30 s.
+// "Auto" big trades: the largest 0.5% of the last hour's market orders, refreshed every 5 s.
 let autoBig = { at: 0, value: 100_000 };
 function bigPrintUsd(): number {
     if (settings.bigPrintUsd !== 'auto') return settings.bigPrintUsd;
     const s = session, now = Date.now();
-    if (s?.store && now - autoBig.at > 30_000) autoBig = { at: now, value: printThreshold(s.store.printsBetween(now - 3_600_000, now + 60_000)) };
+    if (s?.store && now - autoBig.at > 5_000) autoBig = { at: now, value: printThreshold(s.store.printsBetween(now - 3_600_000, now + 60_000)) };
     return autoBig.value;
 }
+
+// Fair value gaps, recomputed at most once a second (candles change on every kline message).
+let fvgMemo = { at: 0, v: -1, h: -1, list: [] as Fvg[], bias: null as ReturnType<typeof fvgBias> };
+function fvgs(): Fvg[] {
+    const s = session;
+    if (!s || !s.candles.length) return [];
+    const now = performance.now();
+    if (now - fvgMemo.at > 1000 || fvgMemo.h !== s.htfVersion) {
+        const own = findFvgs(s.candles, s.tf);
+        let list = own;
+        if (settings.fvg === 'all') for (const [tf, cs] of Object.entries(s.htf)) if (cs) list = list.concat(findFvgs(cs, tf as Fvg['tf']));
+        fvgMemo = { at: now, v: s.candlesVersion, h: s.htfVersion, list, bias: fvgBias(own) };
+    }
+    return fvgMemo.list;
+}
+
+chart.overlay = (ctx, h) => { if (settings.fvg !== 'off') drawFvgs(ctx, fvgs(), h, settings.showMitigated); };
 
 function applyChartOptions() {
     chart.options = { mode: settings.mode, showCvd: settings.showCvd, showBook: settings.showBook, bigPrintUsd: bigPrintUsd() };
@@ -56,6 +75,8 @@ function onData() {
     if (wait > 0) { dataTimer ??= setTimeout(() => { dataTimer = null; onData(); }, wait); return; }
     lastData = performance.now();
     refreshStatus();
+    fvgs();
+    topbar.setBias(settings.fvg === 'off' ? null : fvgMemo.bias);
     applyChartOptions();
     chart.requestRender();
 }
@@ -86,6 +107,7 @@ async function startSession() {
     });
     session = s;
     autoBig = { at: 0, value: 100_000 };
+    fvgMemo = { at: 0, v: -1, h: -1, list: [], bias: null };
     chart.source = sourceFor(s);
     chart.resetView();
     topbar.setStatus('Loading', 'loading');
@@ -117,6 +139,7 @@ async function apply(patch: Partial<Settings>) {
     saveSettings(settings, localStorage);
     topbar.sync(settings);
     applyChartOptions();
+    if ('fvg' in patch) fvgMemo.at = 0;
     if (restart) await startSession();
     else chart.requestRender();
 }

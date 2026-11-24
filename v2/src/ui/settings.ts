@@ -6,6 +6,8 @@ export const SETTINGS_KEY = 'rumeshTape.v2';
 export const HISTORY_HOURS = [1, 2, 6, 24, 48] as const;
 export type HistoryHours = (typeof HISTORY_HOURS)[number];
 const MODES: CellMode[] = ['bidask', 'volume', 'delta'];
+export type FvgSetting = 'off' | 'chart' | 'all';
+const FVG: FvgSetting[] = ['off', 'chart', 'all'];
 
 export interface Settings {
     symbol: string;
@@ -16,6 +18,8 @@ export interface Settings {
     showCvd: boolean;
     showBook: boolean;
     bigPrintUsd: number | 'auto';
+    fvg: FvgSetting;
+    showMitigated: boolean;
 }
 
 export const DEFAULTS: Settings = {
@@ -27,6 +31,8 @@ export const DEFAULTS: Settings = {
     showCvd: true,
     showBook: true,
     bigPrintUsd: 'auto',
+    fvg: 'all',
+    showMitigated: false,
 };
 
 const pick = <T>(v: unknown, ok: (v: unknown) => boolean, fallback: T): T => (ok(v) ? (v as T) : fallback);
@@ -45,6 +51,8 @@ export function loadSettings(storage: Storage): Settings {
         showCvd: pick(raw.showCvd, (v) => typeof v === 'boolean', DEFAULTS.showCvd),
         showBook: pick(raw.showBook, (v) => typeof v === 'boolean', DEFAULTS.showBook),
         bigPrintUsd: pick(raw.bigPrintUsd, (v) => v === 'auto' || (typeof v === 'number' && v > 0 && Number.isFinite(v)), DEFAULTS.bigPrintUsd),
+        fvg: pick(raw.fvg, (v) => FVG.includes(v as FvgSetting), DEFAULTS.fvg),
+        showMitigated: pick(raw.showMitigated, (v) => typeof v === 'boolean', DEFAULTS.showMitigated),
     };
 }
 

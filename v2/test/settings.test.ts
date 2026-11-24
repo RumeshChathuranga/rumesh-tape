@@ -33,4 +33,12 @@ describe('settings', () => {
         saveSettings(s, st);
         expect(loadSettings(st)).toEqual(s);
     });
+
+    it('keeps fair value gap settings and defaults to all timeframes', () => {
+        expect(DEFAULTS).toMatchObject({ fvg: 'all', showMitigated: false });
+        const ok = loadSettings(memoryStorage({ 'rumeshTape.v2': JSON.stringify({ fvg: 'chart', showMitigated: true }) }));
+        expect(ok).toMatchObject({ fvg: 'chart', showMitigated: true });
+        const bad = loadSettings(memoryStorage({ 'rumeshTape.v2': JSON.stringify({ fvg: 'x', showMitigated: 'yes' }) }));
+        expect(bad).toMatchObject({ fvg: 'all', showMitigated: false });
+    });
 });

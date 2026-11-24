@@ -72,5 +72,16 @@ select {
 .price.up .val { color: var(--up); }
 .price.dn .val { color: var(--down); }
 
+.bias { font: 600 11px var(--sans); color: var(--muted); white-space: nowrap; }
+.bias.bullish { color: var(--up); }
+.bias.bearish { color: var(--down); }
+
+.price { flex: none; }
+@media (max-width: 1700px) {
+    .brand span, .brand small { display: none; }
+    .group { padding: 0 7px; }
+    .seg button { padding: 0 7px; }
+}
+
 a.classic { color: var(--muted); font-size: 12px; text-decoration: none; padding: 0 12px; white-space: nowrap; }
 a.classic:hover { color: var(--text); }

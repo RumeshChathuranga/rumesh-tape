@@ -24,6 +24,8 @@ export class Topbar {
     private history: HTMLSelectElement;
     private big: HTMLSelectElement;
     private badge: HTMLSpanElement;
+    private fvg: HTMLSelectElement;
+    private bias: HTMLSpanElement;
     private price: HTMLDivElement;
     private priceVal: HTMLDivElement;
     private priceMeta: HTMLDivElement;
@@ -64,12 +66,17 @@ export class Topbar {
         this.book.addEventListener('click', () => this.onChange({ showBook: !this.s.showBook }));
 
         this.big = el('select', { 'aria-label': 'Big trades', title: 'Market orders shown as bubbles. Auto: the largest 0.5% of market orders over $10k in the last hour, at least $50k' });
-        this.big.appendChild(el('option', { value: 'auto' }, 'Big trades: Auto'));
-        for (const n of BIG_PRINTS) this.big.appendChild(el('option', { value: String(n) }, `Big trades ${usd(n)}`));
+        this.big.appendChild(el('option', { value: 'auto' }, 'Big: Auto'));
+        for (const n of BIG_PRINTS) this.big.appendChild(el('option', { value: String(n) }, `Big ${usd(n)}`));
         this.big.addEventListener('change', () => this.onChange({ bigPrintUsd: this.big.value === 'auto' ? 'auto' : Number(this.big.value) }));
 
+        this.fvg = el('select', { 'aria-label': 'Fair value gaps', title: 'Unmitigated fair value gaps (BISI / SIBI). All adds the 1h and 4h gaps' });
+        for (const [v, label] of [['all', 'FVG + 1h 4h'], ['chart', 'FVG'], ['off', 'FVG off']] as const) this.fvg.appendChild(el('option', { value: v }, label));
+        this.fvg.addEventListener('change', () => this.onChange({ fvg: this.fvg.value as Settings['fvg'] }));
+        this.bias = el('span', { class: 'bias', title: 'Direction of the most recent fair value gap on this chart' });
+
         this.history = el('select', { 'aria-label': 'Real history', title: 'How far back to load real trades (Binance allows 48 h)' });
-        for (const h of HISTORY_HOURS) this.history.appendChild(el('option', { value: String(h) }, `Real trades ${h}h`));
+        for (const h of HISTORY_HOURS) this.history.appendChild(el('option', { value: String(h) }, `History ${h}h`));
         this.history.addEventListener('change', () => this.onChange({ historyHours: Number(this.history.value) as Settings['historyHours'] }));
 
         this.badge = el('span', { class: 'badge', title: 'Footprint cells exist only where real trades are loaded' }, 'Loading');
@@ -83,8 +90,9 @@ export class Topbar {
             brand,
             group(this.sym, this.symErr),
             group(this.tf),
-            group(el('span', { class: 'label' }, 'Rows'), this.rows, this.mode),
+            group(this.rows, this.mode),
             group(this.cvd, this.book, this.big),
+            group(this.fvg, this.bias),
             group(this.history, this.badge),
             el('div', { class: 'spacer' }),
             el('a', { class: 'classic', href: '/' }, 'Classic'),
@@ -102,6 +110,7 @@ export class Topbar {
         this.book.classList.toggle('on', s.showBook);
         this.history.value = String(s.historyHours);
         this.big.value = String(s.bigPrintUsd);
+        this.fvg.value = s.fvg;
         this.rows.value = String(s.rowMult);
         this.priceMeta.textContent = `${s.symbol} · ${s.tf}`;
     }
@@ -109,8 +118,14 @@ export class Topbar {
     /** Row choices as price steps for the current base bin. */
     setRowOptions(bin: number, autoMult: number, decimals: number): void {
         const fmt = (m: number) => (bin * m).toFixed(decimals);
-        this.rows.replaceChildren(el('option', { value: 'auto' }, `Auto (${fmt(autoMult)})`), ...ROW_MULTS.map((m) => el('option', { value: String(m) }, fmt(m))));
+        this.rows.replaceChildren(el('option', { value: 'auto' }, `Rows auto ${fmt(autoMult)}`), ...ROW_MULTS.map((m) => el('option', { value: String(m) }, `Rows ${fmt(m)}`)));
         this.rows.value = String(this.s.rowMult);
+    }
+
+    setBias(b: 'bullish' | 'bearish' | null): void {
+        const text = b ? `Bias ${b}` : '';
+        if (this.bias.textContent !== text) this.bias.textContent = text;
+        this.bias.className = `bias ${b ?? ''}`;
     }
 
     setSymbolError(msg: string | null): void {

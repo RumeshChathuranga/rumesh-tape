@@ -83,3 +83,20 @@ describe('MarketSession', () => {
         await s.stop();
     });
 });
+
+describe('higher-timeframe candles', () => {
+    it('loads 1h and 4h candles for a lower-timeframe chart', async () => {
+        const s = make(fakeRest().rest);
+        await s.start();
+        expect(s.htf['1h']?.length).toBeGreaterThan(0);
+        expect(s.htf['4h']?.length).toBeGreaterThan(0);
+        await s.stop();
+    });
+
+    it('loads none above a 4h chart', async () => {
+        const s = new MarketSession({ symbol: 'BTCUSDT', tf: '4h', historyHours: 0.1, rest: fakeRest().rest, WebSocketImpl: FakeWS as unknown as typeof WebSocket, now: () => NOW, onChange: () => {} });
+        await s.start();
+        expect(Object.keys(s.htf)).toEqual([]);
+        await s.stop();
+    });
+});

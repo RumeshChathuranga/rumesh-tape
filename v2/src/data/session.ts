@@ -2,7 +2,7 @@ import { BarCache } from '../model/bars';
 import { autoRowMult, baseBin } from '../model/bins';
 import { sessionCvd } from '../model/cvd';
 import { MinuteStore, type StoreSnapshot } from '../model/minutes';
-import type { AggTrade, Candle, Timeframe } from '../model/types';
+import { TF_MS, type AggTrade, type Candle, type Timeframe } from '../model/types';
 import { backfillOlder, fillGap } from './backfill';
 import { OrderBook, type DepthEvent } from './book';
 import type { Rest } from './rest';
@@ -15,6 +15,9 @@ export const WS_PUBLIC = 'wss://fstream.binance.com/public/stream?streams=';
 const MAX_CACHE_GAP = 60_000;
 const SAVE_EVERY_MS = 60_000;
 const RESYNC_MIN_MS = 3_000;
+/** Higher timeframes loaded for context (fair value gaps), refreshed by REST. */
+const HTF: Timeframe[] = ['1h', '4h'];
+const HTF_REFRESH_MS = 60_000;
 
 export interface SessionStatus {
     phase: 'loading' | 'backfilling' | 'live' | 'error';
@@ -57,6 +60,9 @@ export class MarketSession {
     tickSize = 0;
     bin = 0;
     candlesVersion = 0;
+    /** 1h and 4h candles when the chart timeframe is lower. */
+    htf: Partial<Record<Timeframe, Candle[]>> = {};
+    htfVersion = 0;
 
     private readonly ac = new AbortController();
     private readonly now: () => number;
@@ -69,6 +75,7 @@ export class MarketSession {
     private snapshotBusy = false;
     private lastSnapshot = 0;
     private saveTimer: ReturnType<typeof setInterval> | null = null;
+    private htfTimer: ReturnType<typeof setInterval> | null = null;
     private cvdMemo: { v: number; values: number[] } | null = null;
     private multMemo: { v: number; mult: number } | null = null;
 
@@ -88,6 +95,7 @@ export class MarketSession {
         const last = this.candles[this.candles.length - 1];
         this.bin = baseBin(last ? last.c : 1, tickSize);
         const historyStart = this.now() - this.o.historyHours * 3_600_000;
+        await this.loadHtf();
 
         const snap = cache ? await cache.load(this.symbol).catch(() => null) : null;
         if (snap && snap.bin === this.bin && snap.lastTime !== null && snap.lastTime >= historyStart) {
@@ -108,6 +116,7 @@ export class MarketSession {
         this.status.phase = 'backfilling';
         this.changed();
         if (cache) this.saveTimer = setInterval(() => void this.save(), SAVE_EVERY_MS);
+        if (Object.keys(this.htf).length) this.htfTimer = setInterval(() => void this.loadHtf().then(() => this.changed()), HTF_REFRESH_MS);
         void this.backfill(historyStart);
     }
 
@@ -118,6 +127,7 @@ export class MarketSession {
         this.market?.close();
         this.pub?.close();
         if (this.saveTimer) clearInterval(this.saveTimer);
+        if (this.htfTimer) clearInterval(this.htfTimer);
         await this.save();
     }
 
@@ -135,6 +145,15 @@ export class MarketSession {
             this.multMemo = { v: this.candles.length, mult: autoRowMult(this.candles, this.bin) };
         }
         return this.multMemo.mult;
+    }
+
+    private async loadHtf() {
+        for (const tf of HTF) {
+            if (TF_MS[tf] <= TF_MS[this.tf]) continue;
+            try { this.htf[tf] = await this.o.rest.klines(this.symbol, tf, 300); }
+            catch (e) { console.warn(`${tf} candles failed`, e); }
+        }
+        this.htfVersion++;
     }
 
     private async anchor(historyStart: number) {
