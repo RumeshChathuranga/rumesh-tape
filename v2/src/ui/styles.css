@@ -54,6 +54,21 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 .sp-alert { padding: 5px 0; border-bottom: 1px solid var(--line); }
 .sp-alert.setup .sp-strong { color: var(--accent); }
 .sp-alerts { margin-top: 6px; }
+.sp-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sp-top h3 { margin: 0; }
+
+#rt-guide { position: fixed; inset: 0; z-index: 9000; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.g-card { width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 18px 20px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5); }
+.g-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.g-head h2 { margin: 0; font: 600 17px var(--sans); }
+.g-close { height: 28px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 4px; background: transparent; color: var(--text-dim); font: 500 12px var(--sans); cursor: pointer; }
+.g-close:hover { color: var(--text); border-color: var(--accent); }
+#rt-guide ol { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+#rt-guide li { counter-increment: step; position: relative; padding: 12px 0 12px 40px; border-bottom: 1px solid var(--line); }
+#rt-guide li::before { content: counter(step); position: absolute; left: 0; top: 12px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 700 13px var(--mono); display: flex; align-items: center; justify-content: center; }
+#rt-guide h3 { margin: 0 0 4px; font: 600 14px var(--sans); }
+#rt-guide li p { margin: 2px 0; color: var(--text-dim); font-size: 13px; line-height: 1.45; }
+.g-rule { margin: 14px 0 0; padding: 10px 12px; border-left: 3px solid var(--down); background: rgba(239, 68, 68, 0.08); color: var(--text); font-size: 13px; line-height: 1.45; }
 
 header {
     height: 48px; flex: none; display: flex; align-items: center; gap: 0;

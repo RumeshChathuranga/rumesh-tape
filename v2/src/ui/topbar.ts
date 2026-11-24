@@ -1,5 +1,6 @@
 import { ROW_MULTS } from '../model/bins';
 import { TIMEFRAMES } from '../model/types';
+import { openGuide } from './guide';
 import { HISTORY_HOURS, type Settings } from './settings';
 
 const BIG_PRINTS = [25_000, 50_000, 100_000, 250_000, 1_000_000];
@@ -79,7 +80,7 @@ export class Topbar {
         this.fvg = el('select', { 'aria-label': 'Fair value gaps', title: 'Unmitigated fair value gaps (BISI / SIBI). All adds the 1h and 4h gaps' });
         for (const [v, label] of [['all', 'FVG + 1h 4h'], ['chart', 'FVG'], ['off', 'FVG off']] as const) this.fvg.appendChild(el('option', { value: v }, label));
         this.fvg.addEventListener('change', () => this.onChange({ fvg: this.fvg.value as Settings['fvg'] }));
-        this.bias = el('span', { class: 'bias', title: 'Direction of the most recent fair value gap on this chart' });
+        this.bias = el('span', { class: 'bias', title: 'Strategy bias: direction of the newest 15m fair value gap (same as the Scalp panel)' });
 
         this.history = el('select', { 'aria-label': 'Real history', title: 'How far back to load real trades (Binance allows 48 h)' });
         for (const h of HISTORY_HOURS) this.history.appendChild(el('option', { value: String(h) }, `History ${h}h`));
@@ -102,6 +103,7 @@ export class Topbar {
             group(this.history, this.badge),
             el('div', { class: 'spacer' }),
             this.scalp,
+            (() => { const g = el('button', { class: 'tg', title: 'How to trade the US-open scalp' }, 'Guide'); g.addEventListener('click', () => openGuide()); return g; })(),
             el('a', { class: 'classic', href: '/' }, 'Classic'),
             this.price,
         );
@@ -132,7 +134,7 @@ export class Topbar {
     }
 
     setBias(b: 'bullish' | 'bearish' | null): void {
-        const text = b ? `Bias ${b}` : '';
+        const text = b ? `Bias ${b}` : 'No bias';
         if (this.bias.textContent !== text) this.bias.textContent = text;
         this.bias.className = `bias ${b ?? ''}`;
     }

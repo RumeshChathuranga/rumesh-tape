@@ -2,6 +2,7 @@ import { limitReached, positionSize, recordTrade, usOpenWindow, type DayCount } 
 import type { Setup } from '../model/setup';
 import type { Zone } from '../model/zones';
 import { requestNotifyPermission, type Alerts } from './alerts';
+import { openGuide } from './guide';
 
 export const SCALP_KEY = 'rumeshTape.v2.scalp';
 
@@ -53,7 +54,11 @@ export class ScalpPanel {
             host.appendChild(s);
             return s;
         };
-        host.appendChild(h('h3', '', 'Scalp plan'));
+        const top = h('div', 'sp-top');
+        const guide = h('button', 'sp-btn', 'How to trade');
+        guide.addEventListener('click', () => openGuide());
+        top.append(h('h3', '', 'Scalp plan'), guide);
+        host.appendChild(top);
         section('Trading window', this.win.range, this.win.status);
         section('Bias', this.bias);
         section('Zones', this.zones, h('p', 'sp-note', 'Volume levels are estimated from 1-minute candles. First touch only.'));
@@ -163,7 +168,7 @@ export class ScalpPanel {
             line('Loss at stop', `${money(p.risk)} USDT (stop ${p.stopPct.toFixed(3)}%)`),
             line('Fees', `${money(p.fees)} USDT`),
             line('First target (2.5x stop)', p.target.toFixed(this.decimals)),
-            ...(p.tooWide ? [h('div', 'sp-warn', 'Stop is wider than 0.25%: skip this trade.')] : []),
+            ...(p.tooWide ? [h('div', 'sp-warn', 'Stop too wide (over 0.25%): skip this trade.')] : []),
         );
     }
 
