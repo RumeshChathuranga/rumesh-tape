@@ -14,8 +14,10 @@ This is a restyled build of an existing tool. `original.html` is the upstream pa
 | `theme/styles.css` | Midnight Cobalt theme |
 | `theme/body.html` | Top bar, Studies drawer, chart markup |
 | `theme/fund.html` | Fundamentals panel |
-| `theme/ui.js` | Drawer, timeframe and live price wiring |
-| `theme/build.py` | Assembles the page and re-colours the chart engine |
+| `theme/ui.js` | Drawer, timeframe, live price, saved settings and the data badge |
+| `theme/engine-prelude.js` | Runs before the engine: safe error toast, saved timeframe, symbol-switch cleanup |
+| `theme/build.py` | Assembles the page, patches and re-colours the chart engine |
+| `tests/` | Build checks (`test_build.py`) and a headless Chrome smoke test (`smoke.mjs`) |
 | `public-site/` | Built output that Vercel serves |
 | `rumesh-tape.html` | Built page for local use |
 
@@ -36,3 +38,15 @@ python3 -m http.server 8765 --bind 127.0.0.1 -d public-site
 ```
 
 Then open http://127.0.0.1:8765.
+
+## Test
+
+```
+python3 -m unittest discover -s tests -v   # checks the built page
+node tests/smoke.mjs                       # drives the page in headless Chrome (needs google-chrome and network)
+```
+
+## Notes
+
+- Footprint cells for bars that existed before the page opened are estimated by the engine from candle data. Only bars printed while the page is open use real trades. The top bar shows "Real from HH:MM".
+- `docs/` holds private course notes and is git-ignored. Don't commit it: this repo is public.

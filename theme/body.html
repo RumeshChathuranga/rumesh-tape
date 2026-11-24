@@ -17,12 +17,13 @@
             </div>
             <div class="bar-group">
                 <div class="seg" id="tf-seg" role="group" aria-label="Timeframe">
-                    <button data-tf="1m">1m</button><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h">1h</button><button data-tf="2h">2h</button><button data-tf="4h">4h</button><button data-tf="1d">1d</button>
+                    <button data-tf="1m">1m</button><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="30m">30m</button><button data-tf="1h">1h</button><button data-tf="2h">2h</button><button data-tf="4h">4h</button><button data-tf="1d">1d</button>
                 </div>
                 <select id="tf-select" class="atas-select" hidden>
                     <option value="1m">1m</option>
                     <option value="5m">5m</option>
                     <option value="15m">15m</option>
+                    <option value="30m">30m</option>
                     <option value="1h">1h</option>
                     <option value="2h">2h</option>
                     <option value="4h">4h</option>
@@ -89,6 +90,7 @@
 
             <div class="bar-spacer"></div>
             <div class="bar-group">
+                <span id="data-badge" class="data-badge" hidden title="Footprint cells before this time are estimated from candles. Bar volume and delta are real throughout.">Waiting for trades</span>
                 <button id="jump-24h-btn" class="tg small" title="Scroll back 24 hours">−24h</button>
                 <button id="go-live-btn" class="tg boxed small active" title="Jump to the live bar"><span class="dot"></span>Live</button>
                 <button id="fund-btn" class="tg small" onclick="openFundamental()" title="Fundamentals for this coin"><span class="label-long">Fundamentals</span><span class="label-short">Fund</span></button>
@@ -148,35 +150,21 @@
                     <div class="sheet-toggle" data-key="showHeat" data-btn="heat-btn"><span class="st-name">Liquidity heatmap</span><span class="st-desc">Resting book depth over time</span></div>
                     <div class="sheet-toggle" data-key="showWhale" data-btn="whale-btn"><span class="st-name">Whale trades</span><span class="st-desc">Large aggressive prints as bubbles</span></div>
                     <div class="sheet-toggle" data-key="showSizeDelta" data-btn="sizedelta-btn"><span class="st-name">Trade size delta</span><span class="st-desc">Delta split by trade size</span></div>
-                    <div class="sheet-toggle" data-key="showVPT" data-btn="vpt-btn"><span class="st-name">Volume per tick</span><span class="st-desc">Up and down volume per price move</span></div>
-                    <div class="sheet-toggle" data-key="showPaceTape" data-btn="pace-btn"><span class="st-name">Tape speed</span><span class="st-desc">Pace of executed trades</span></div>
                     <div class="sheet-toggle" data-key="showAbsorption" data-btn="abs-btn"><span class="st-name">Absorption</span><span class="st-desc">Heavy volume with little price progress</span></div>
                     <div class="sheet-toggle" data-key="showHVBuyZone" data-btn="hvbuy-btn"><span class="st-name">High-volume buying</span><span class="st-desc">Zones of concentrated buying</span></div>
                     <div class="sheet-toggle" data-key="showHVSellZone" data-btn="hvsell-btn"><span class="st-name">High-volume selling</span><span class="st-desc">Zones of concentrated selling</span></div>
-                    <div class="sheet-toggle" data-key="showWDE" data-btn="wde-btn"><span class="st-name">Wick delta exhaustion</span><span class="st-desc">Delta that fails at the wick</span></div>
                     <div class="sheet-toggle" data-key="showShape" data-btn="shape-btn"><span class="st-name">Footprint shape</span><span class="st-desc">P, b and D profile classifier</span></div>
                 </div>
 
                 <div class="sheet-section-title">Order book</div>
                 <div class="sheet-grid">
-                    <div class="sheet-toggle" data-key="showDOMLiq" data-btn="domliq-btn"><span class="st-name">Book liquidity</span><span class="st-desc">Live resting orders by price</span></div>
+                    <div class="sheet-toggle" data-key="showDOMLiq" data-btn="domliq-btn"><span class="st-name">Liquidation map (estimated)</span><span class="st-desc">From assumed leverage, not the order book</span></div>
                     <div class="sheet-toggle" data-key="showDOMProf" data-btn="domprof-btn"><span class="st-name">Book profile</span><span class="st-desc">Live order volume profile</span></div>
                     <div class="sheet-toggle" data-key="showGlowWalls" data-btn="glow-btn"><span class="st-name">Glow walls</span><span class="st-desc">Highlight unusually large orders</span></div>
                     <div class="sheet-toggle" data-key="showVWBA" data-btn="vwba-btn"><span class="st-name">VWBA / VWAA</span><span class="st-desc">Volume-weighted bid and ask average</span></div>
                     <div class="sheet-toggle" data-key="showBBADelta" data-btn="bbadelta-btn"><span class="st-name">Best bid/ask delta</span><span class="st-desc">Top-of-book pressure oscillator</span></div>
                     <div class="sheet-toggle" data-key="showIceberg" data-btn="iceberg-btn"><span class="st-name">Icebergs</span><span class="st-desc">Hidden size refilling at a price</span></div>
                     <div class="sheet-toggle" data-key="showSpoofDetector" data-btn="spoof-btn"><span class="st-name">Spoofing</span><span class="st-desc">Large orders pulled before fill</span></div>
-                </div>
-
-                <div class="sheet-section-title">Structure</div>
-                <div class="sheet-grid">
-                    <div class="sheet-toggle" data-key="showSNR" data-btn="snr-btn"><span class="st-name">Support &amp; resistance</span><span class="st-desc">Key reaction levels</span></div>
-                    <div class="sheet-toggle" data-key="showSMC" data-btn="smc-btn"><span class="st-name">Smart money concepts</span><span class="st-desc">BOS, MSS, IDM and order blocks</span></div>
-                    <div class="sheet-toggle" data-key="showAutoFVG" data-btn="autofvg-btn"><span class="st-name">Fair value gaps</span><span class="st-desc">Auto FVG and order blocks</span></div>
-                    <div class="sheet-toggle" data-key="showWyckoff" data-btn="wyc-btn"><span class="st-name">Wyckoff</span><span class="st-desc">Accumulation and distribution entries</span></div>
-                    <div class="sheet-toggle" data-key="showEW" data-btn="ew-btn"><span class="st-name">Elliott wave</span><span class="st-desc">Wave count with Fibonacci targets</span></div>
-                    <div class="sheet-toggle" data-key="showSK" data-btn="sk-btn"><span class="st-name">SK system</span><span class="st-desc">Sequence and correction zones</span></div>
-                    <div class="sheet-toggle" data-key="showCRT" data-btn="crt-btn"><span class="st-name">Candle range theory</span><span class="st-desc">CRT entry setups</span></div>
                 </div>
 
                 <div class="sheet-section-title">Profiles &amp; levels</div>
@@ -190,19 +178,15 @@
                     <div class="sheet-toggle" data-key="showLVN" data-btn="lvn-btn"><span class="st-name">Low-volume nodes</span><span class="st-desc">Thin areas in the profile</span></div>
                     <div class="sheet-toggle" data-key="showTPOLVN" data-btn="tpo-lvn-btn"><span class="st-name">TPO single prints</span><span class="st-desc">Prices visited only once</span></div>
                     <div class="sheet-toggle" data-key="showDayOpen" data-btn="day-open-btn"><span class="st-name">Daily open</span><span class="st-desc">Line at today's open price</span></div>
-                    <div class="sheet-toggle" data-key="showPivots" data-btn="pivot-btn"><span class="st-name">Pivot points</span><span class="st-desc">Classic daily pivots</span></div>
                 </div>
 
                 <div class="sheet-section-title">Derivatives &amp; sentiment</div>
                 <div class="sheet-grid">
                     <div class="sheet-toggle" data-key="showOI" data-btn="oi-btn"><span class="st-name">Open interest</span><span class="st-desc">Overlay on the price chart</span></div>
                     <div class="sheet-toggle" data-key="showOIPanel" data-btn="oit-btn"><span class="st-name">Open interest pane</span><span class="st-desc">Separate pane under the chart</span></div>
-                    <div class="sheet-toggle" id="st-oiwall" data-key="showOIWall" data-btn="oiwall-btn"><span class="st-name">Open interest wall</span><span class="st-desc">Price with the heaviest open interest</span></div>
-                    <div class="sheet-toggle" data-key="showRekt" data-btn="rekt-btn"><span class="st-name">Liquidations</span><span class="st-desc">Live liquidation bubbles</span></div>
-                    <div class="sheet-toggle" data-key="showLiqPool" data-btn="liqpool-btn"><span class="st-name">Liquidation pools</span><span class="st-desc">Estimated liquidation clusters</span></div>
-                    <div class="sheet-toggle" data-key="showMMS" data-btn="mms-btn"><span class="st-name">Microstructure score</span><span class="st-desc">With the Fear &amp; Greed index</span></div>
-                    <div class="sheet-toggle" id="st-news" data-key="showNews" data-btn="news-btn"><span class="st-name">News</span><span class="st-desc">Headlines with sentiment</span></div>
-                    <div class="sheet-toggle" data-key="showTFHeatmap" data-btn="theat-btn"><span class="st-name">Multi-timeframe delta</span><span class="st-desc">Delta direction across timeframes</span></div>
+                    <div class="sheet-toggle" id="st-oiwall" data-key="showOIWall" data-btn="oiwall-btn"><span class="st-name">Peak open interest price</span><span class="st-desc">Where open interest peaked, last 4 hours</span></div>
+                    <div class="sheet-toggle" data-key="showRekt" data-btn="rekt-btn"><span class="st-name">Liquidations</span><span class="st-desc">Largest per second only (Binance limit)</span></div>
+                    <div class="sheet-toggle" data-key="showLiqPool" data-btn="liqpool-btn"><span class="st-name">Liquidation pools</span><span class="st-desc">Liquidation clusters since the page opened</span></div>
                 </div>
 
                 <div class="sheet-section-title">Display</div>
@@ -214,9 +198,19 @@
                     <div class="sheet-toggle action" onclick="closeSheet(); openFundamental();"><span class="st-name">Fundamentals</span><span class="st-desc">Market, supply and positioning data</span></div>
                 </div>
 
+                <details class="sheet-extra">
+                    <summary class="sheet-section-title">Extra</summary>
+                    <div class="sheet-grid">
+                        <div class="sheet-toggle" data-key="showPaceTape" data-btn="pace-btn"><span class="st-name">Tape speed</span><span class="st-desc">Pace of executed trades</span></div>
+                        <div class="sheet-toggle" data-key="showVPT" data-btn="vpt-btn"><span class="st-name">Volume per tick</span><span class="st-desc">Up and down volume per price move</span></div>
+                        <div class="sheet-toggle" data-key="showWDE" data-btn="wde-btn"><span class="st-name">Wick delta exhaustion</span><span class="st-desc">Delta that fails at the wick</span></div>
+                        <div class="sheet-toggle" data-key="showTFHeatmap" data-btn="theat-btn"><span class="st-name">Multi-timeframe delta</span><span class="st-desc">Delta direction across timeframes</span></div>
+                    </div>
+                </details>
+
                 <div class="sheet-section-title">Thresholds</div>
                 <div class="sheet-fields">
-                    <label>Whale size (BTC)<input type="text" id="whale-thres-input" class="atas-input" value="10.0"></label>
+                    <label>Whale size (coins)<input type="text" id="whale-thres-input" class="atas-input" value="10.0"></label>
                     <label>Medium trade ($)<input type="text" id="size-med-input" class="atas-input" value="1000"></label>
                     <label>Large trade ($)<input type="text" id="size-large-input" class="atas-input" value="10000"></label>
                     <label>Whale trade ($)<input type="text" id="size-whale-input" class="atas-input" value="100000"></label>
@@ -248,6 +242,7 @@
                     <div class="sheet-tf-btn" onclick="setMobileTF('1m',this)">1m</div>
                     <div class="sheet-tf-btn" onclick="setMobileTF('5m',this)">5m</div>
                     <div class="sheet-tf-btn" onclick="setMobileTF('15m',this)">15m</div>
+                    <div class="sheet-tf-btn" onclick="setMobileTF('30m',this)">30m</div>
                     <div class="sheet-tf-btn" onclick="setMobileTF('1h',this)">1h</div>
                     <div class="sheet-tf-btn" onclick="setMobileTF('2h',this)">2h</div>
                     <div class="sheet-tf-btn" onclick="setMobileTF('4h',this)">4h</div>

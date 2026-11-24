@@ -92,7 +92,31 @@ GLYPHS = [
 COPY = [
     (" — FA Engine", " · Fundamentals"),
     ("-- AGGREGATION --", "Aggregation"),
+    # The "OI wall" is only the price where open interest peaked, not a wall of orders
+    ("SELL WALL", "Above price"),
+    ("BUY WALL", "Below price"),
 ]
+
+# 30-minute timeframe: (find, replace, expected matches) in the main engine
+TF_30M = [
+    # bar bucketing for live trades, the timeframe <select>, the phone timeframe sheet
+    ("'15m':0xdbba0,", "'15m':0xdbba0,'30m':0x1b7740,", 3),
+    # open interest history period
+    ("'15m':'15m',", "'15m':'15m','30m':'30m',", 1),
+    # timeframes loaded at start
+    ("['1m','5m','15m','1h','2h','4h','1d']", "['1m','5m','15m','30m','1h','2h','4h','1d']", 1),
+    # auto tick: divisor for the average bar range
+    ("'15m':0x8,", "'15m':0x8,'30m':0xb,", 1),
+]
+
+
+def patch(js, old, new, count, name, stats):
+    """Replace `old` with `new`, insisting on exactly `count` matches."""
+    found = js.count(old)
+    if found != count:
+        sys.exit("Patch %r: expected %d match(es), found %d" % (name, count, found))
+    stats["patch " + name] += found
+    return js.replace(old, new)
 
 
 def loose(text):
@@ -159,26 +183,57 @@ def main():
             sys.exit("Unexpected source layout at line %d: %r" % (n, lines[n - 1][:80]))
 
     stats = collections.Counter()
+    eng, fa = lines[847], lines[1024]
 
-    # Start on the 5-minute chart (the engine doesn't persist timeframe,
-    # so this default is what every fresh load uses).
-    default_tf = "'tf':'1m','tfMs':0xea60"
-    if lines[847].count(default_tf) != 1:
-        sys.exit("Could not find the engine's default timeframe")
-    lines[847] = lines[847].replace(default_tf, "'tf':'5m','tfMs':0x493e0")
-    stats["default tf -> 5m"] += 1
+    # Replace the engine's error handler (it rewrote document.body.innerHTML,
+    # which killed every button) with our prelude: safe error toast, saved
+    # timeframe, HTML escaping and symbol-switch cleanup.
+    err_re = re.compile(r"window\['addEventListener'\]\('error',function\(_0x293acd\)\{"
+                        r"document\['body'\]\['innerHTML'\]\+=.*?'</div>';\}\);")
+    if len(err_re.findall(eng)) != 1:
+        sys.exit("Could not find the engine's error handler")
+    prelude = (THEME / "engine-prelude.js").read_text(encoding="utf-8").strip()
+    eng = err_re.sub(lambda m: "\n" + prelude + "\n", eng)
+    stats["patch error handler -> prelude"] += 1
+
+    # Start on the saved timeframe (5m when nothing is saved yet).
+    eng = patch(eng, "'tf':'1m','tfMs':0xea60", "'tf':__rtTF['tf'],'tfMs':__rtTF['ms']", 1,
+                "saved timeframe", stats)
+
+    for old, new, n in TF_30M:
+        eng = patch(eng, old, new, n, "30m " + old, stats)
+
+    # Switching symbol: close the other symbols' sockets, and never open
+    # sockets for a symbol that is no longer on screen.
+    eng = patch(eng, "const _0x27b057=_0x3341a2['toUpperCase']();",
+                "const _0x27b057=_0x3341a2['toUpperCase']();__rtDropOtherSymbols(_0x27b057);", 1,
+                "init drops other symbols", stats)
+    eng = patch(eng, "async function connectLive(_0x30a3a0){",
+                "async function connectLive(_0x30a3a0){if(_0x30a3a0!==SETTINGS['symbol'])return;", 1,
+                "connectLive current symbol only", stats)
+
+    # News headline and source come from a third-party API: escape them.
+    eng = patch(eng, "'+_0x17ae7a+'</div>", "'+__rtEsc(_0x17ae7a)+'</div>", 1, "news title", stats)
+    eng = patch(eng, "'+_0x289d88+'</div>", "'+__rtEsc(_0x289d88)+'</div>", 1, "news source", stats)
 
     # Fundamentals: CoinGecko's free API no longer returns developer_data /
     # community_data, and the panel crashed reading fields off undefined.
-    fa_fix = "_0x251b52=_0x30136c['developer_data'],_0xe41395=_0x30136c['community_data']"
-    if lines[1024].count(fa_fix) != 1:
-        sys.exit("Could not find the fundamentals data accessors")
-    lines[1024] = lines[1024].replace(
-        fa_fix, "_0x251b52=_0x30136c['developer_data']||{},_0xe41395=_0x30136c['community_data']||{}")
-    stats["fundamentals null-guard"] += 1
+    fa = patch(fa, "_0x251b52=_0x30136c['developer_data'],_0xe41395=_0x30136c['community_data']",
+               "_0x251b52=_0x30136c['developer_data']||{},_0xe41395=_0x30136c['community_data']||{}", 1,
+               "fundamentals null-guard", stats)
 
-    main_js = retheme_js(lines[847], stats)
-    tail_js = retheme_js(lines[1024], stats)
+    # Fundamentals: drop the Buy/Sell verdict from the Sinhala notes. The
+    # score behind it is arbitrary and loses 45 points on most coins.
+    v_start, v_end = "if(_0x1674d>=0x50)_0x5a20d6+=", "if(_0x2df2e2>=0.8)_0x5a20d6+="
+    if fa.count(v_start) != 1 or fa.count(v_end) != 1:
+        sys.exit("Could not find the fundamentals verdict text")
+    fa = fa[:fa.index(v_start)] + fa[fa.index(v_end):]
+    stats["patch verdict removed"] += 1
+    fa = patch(fa, "මෙසේය:\\x20<br><br>';", "මෙසේය:';", 1, "notes intro", stats)
+
+    main_js = retheme_js(eng, stats)
+    tail_js_src = fa
+    tail_js = retheme_js(tail_js_src, stats)
 
     # doctype .. viewport meta (keeps domain lock + time sync). The charset
     # meta must sit in the first 1024 bytes, so lift it above the lock script.
