@@ -4,9 +4,14 @@ import { createRest, UnknownSymbolError } from './data/rest';
 import { MarketSession } from './data/session';
 import { findFvgs, fvgBias, type Fvg } from './model/fvg';
 import { printThreshold } from './model/prints';
+import { detectSetup, type Setup } from './model/setup';
+import { buildZones, ZoneTracker, type Zone } from './model/zones';
 import { TF_MS } from './model/types';
 import { Chart, type ChartSource } from './render/chart';
 import { drawFvgs } from './render/fvg';
+import { drawLevels } from './render/levels';
+import { Alerts } from './ui/alerts';
+import { ScalpPanel } from './ui/scalp';
 import { loadSettings, saveSettings, type Settings } from './ui/settings';
 import { Topbar } from './ui/topbar';
 
@@ -20,6 +25,9 @@ const chart = new Chart(document.getElementById('chart')!);
 const topbar = new Topbar(document.getElementById('topbar')!, settings, (patch) => void apply(patch));
 let session: MarketSession | null = null;
 let cache: TradeCache | undefined;
+const alerts = new Alerts();
+const scalpHost = document.getElementById('scalp')!;
+const panel = new ScalpPanel(scalpHost, alerts);
 
 function sourceFor(s: MarketSession): ChartSource {
     return {
@@ -61,7 +69,69 @@ function fvgs(): Fvg[] {
     return fvgMemo.list;
 }
 
-chart.overlay = (ctx, h) => { if (settings.fvg !== 'off') drawFvgs(ctx, fvgs(), h, settings.showMitigated); };
+// ---- strategy: zones, first touches, setups (checked at most once a second)
+let tracker = new ZoneTracker();
+let zones: Zone[] = [];
+let latestSetup: Setup | null = null;
+let scalpAt = 0;
+let scanFrom = 0;
+function scalpTick(force = false) {
+    const s = session;
+    const now = Date.now();
+    if (!s || !s.store || !s.candles.length || (!force && now - scalpAt < 1000)) return;
+    const price = s.candles[s.candles.length - 1].c;
+    // Price range traded since the last check (whole current minute, so wicks count).
+    let lo = price, hi = price;
+    for (const k of s.store.cellsBetween(Math.min(scanFrom || now, now) - 60_000, now + 60_000).keys()) {
+        lo = Math.min(lo, k * s.bin);
+        hi = Math.max(hi, (k + 1) * s.bin);
+    }
+    scanFrom = now;
+    scalpAt = now;
+    const htfFvgs: Fvg[] = [];
+    for (const [tf, cs] of Object.entries(s.htf)) if (cs) htfFvgs.push(...findFvgs(cs, tf as Fvg['tf']));
+    if (TF_MS[s.tf] >= TF_MS['15m']) htfFvgs.push(...findFvgs(s.candles, s.tf));
+    const bias = fvgBias(findFvgs(s.htf['15m'] ?? (s.tf === '15m' ? s.candles : []), '15m')) ?? fvgMemo.bias;
+    zones = buildZones({ price, fvgs: htfFvgs, profiles: s.context.profiles, nakedPocs: s.context.nakedPocs, bias, tolerance: s.bin * s.rowMult('auto') });
+    const dec = decimalsOf(s.tickSize || 1);
+    for (const z of tracker.update(zones, lo, hi, now)) {
+        alerts.push({ key: `zone:${s.symbol}:${z.id}`, time: now, kind: 'zone', title: `${s.symbol} reached ${z.label}`,
+            body: `${z.grade} zone ${z.bottom.toFixed(dec)}–${z.top.toFixed(dec)}. Wait for confirmation on the footprint.` });
+    }
+    if (bias && s.status.coveredFrom !== null) {
+        const n = s.candles.length, from = Math.max(0, n - 40);
+        const src = sourceFor(s);
+        const bars = [];
+        for (let i = from; i < n; i++) bars.push(src.bar(i));
+        for (const z of zones) {
+            const t = tracker.touchedAt(z.id);
+            if (t === null || (bias === 'bullish') !== (z.side === 'support')) continue;
+            const st = detectSetup(bars, z, t, s.tickSize);
+            if (!st) continue;
+            if (!latestSetup || st.time >= latestSetup.time) latestSetup = st;
+            alerts.push({ key: `setup:${s.symbol}:${st.key}`, time: now, kind: 'setup',
+                title: `${st.dir === 'long' ? 'Long' : 'Short'} setup on ${s.symbol} at ${z.label}`,
+                body: `${st.signals.join(', ')} · entry ${st.entry.toFixed(dec)} · stop ${st.stop.toFixed(dec)}` });
+        }
+    }
+    panel.update({ now, bias, zones, touched: (id) => tracker.touchedAt(id), setup: latestSetup, price, decimals: dec });
+}
+setInterval(() => scalpTick(true), 15_000);
+
+chart.overlay = (ctx, h) => {
+    const s = session;
+    if (settings.showLevels && s) {
+        const today = s.context.candles1m.slice(-s.context.vwap.length);
+        drawLevels(ctx, h, {
+            vwap: today.map((c, i) => ({ t: c.t, v: s.context.vwap[i] })),
+            profile: s.context.profiles.length >= 2 ? s.context.profiles[s.context.profiles.length - 2] : null,
+            nakedPocs: s.context.nakedPocs,
+            zones,
+            touched: (id) => tracker.touchedAt(id),
+        });
+    }
+    if (settings.fvg !== 'off') drawFvgs(ctx, fvgs(), h, settings.showMitigated);
+};
 
 function applyChartOptions() {
     chart.options = { mode: settings.mode, showCvd: settings.showCvd, showBook: settings.showBook, bigPrintUsd: bigPrintUsd() };
@@ -76,6 +146,7 @@ function onData() {
     lastData = performance.now();
     refreshStatus();
     fvgs();
+    scalpTick();
     topbar.setBias(settings.fvg === 'off' ? null : fvgMemo.bias);
     applyChartOptions();
     chart.requestRender();
@@ -106,6 +177,10 @@ async function startSession() {
         rest, cache, onChange: () => { if (session === s) onData(); },
     });
     session = s;
+    tracker = new ZoneTracker();
+    zones = [];
+    latestSetup = null;
+    scanFrom = 0;
     autoBig = { at: 0, value: 100_000 };
     fvgMemo = { at: 0, v: -1, h: -1, list: [], bias: null };
     chart.source = sourceFor(s);
@@ -138,6 +213,7 @@ async function apply(patch: Partial<Settings>) {
     settings = { ...settings, ...patch };
     saveSettings(settings, localStorage);
     topbar.sync(settings);
+    scalpHost.hidden = !settings.showScalp;
     applyChartOptions();
     if ('fvg' in patch) fvgMemo.at = 0;
     if (restart) await startSession();
@@ -145,6 +221,7 @@ async function apply(patch: Partial<Settings>) {
 }
 
 async function boot() {
+    scalpHost.hidden = !settings.showScalp;
     applyChartOptions();
     try { cache = await TradeCache.open(); } catch (e) { console.warn('IndexedDB unavailable, trades will not be cached', e); }
     await startSession();
