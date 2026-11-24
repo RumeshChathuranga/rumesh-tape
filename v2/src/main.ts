@@ -1,2 +1,139 @@
-// Placeholder: the page is wired up in Task 9.
-export {};
+import './ui/styles.css';
+import { TradeCache } from './data/cache';
+import { createRest, UnknownSymbolError } from './data/rest';
+import { MarketSession } from './data/session';
+import { printThreshold } from './model/prints';
+import { TF_MS } from './model/types';
+import { Chart, type ChartSource } from './render/chart';
+import { loadSettings, saveSettings, type Settings } from './ui/settings';
+import { Topbar } from './ui/topbar';
+
+const decimalsOf = (step: number) => (step >= 1 ? 0 : Math.min(10, Math.round(-Math.log10(step))));
+const pad2 = (n: number) => (n < 10 ? '0' : '') + n;
+const hhmm = (t: number) => { const d = new Date(t); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+
+let settings = loadSettings(localStorage);
+const rest = createRest();
+const chart = new Chart(document.getElementById('chart')!);
+const topbar = new Topbar(document.getElementById('topbar')!, settings, (patch) => void apply(patch));
+let session: MarketSession | null = null;
+let cache: TradeCache | undefined;
+
+function sourceFor(s: MarketSession): ChartSource {
+    return {
+        get length() { return s.candles.length; },
+        candle: (i) => s.candles[i],
+        bar: (i) => s.bars.bar(s.candles[i], TF_MS[s.tf], s.store, s.rowMult(settings.rowMult), i === s.candles.length - 1),
+        cvd: (i) => s.cvd()[i],
+        prints: (from, to) => s.store?.printsBetween(from, to) ?? [],
+        get rowSize() { return s.bin * s.rowMult(settings.rowMult); },
+        tfMs: TF_MS[s.tf],
+        get priceDecimals() { return decimalsOf(s.tickSize || 1); },
+        get coveredFrom() { return s.status.coveredFrom; },
+        get book() { return s.book; },
+        get bookSynced() { return s.status.bookSynced; },
+    };
+}
+
+// "Auto" big trades: the largest 0.5% of the last hour's market orders, refreshed every 30 s.
+let autoBig = { at: 0, value: 100_000 };
+function bigPrintUsd(): number {
+    if (settings.bigPrintUsd !== 'auto') return settings.bigPrintUsd;
+    const s = session, now = Date.now();
+    if (s?.store && now - autoBig.at > 30_000) autoBig = { at: now, value: printThreshold(s.store.printsBetween(now - 3_600_000, now + 60_000)) };
+    return autoBig.value;
+}
+
+function applyChartOptions() {
+    chart.options = { mode: settings.mode, showCvd: settings.showCvd, showBook: settings.showBook, bigPrintUsd: bigPrintUsd() };
+}
+
+// Live data can arrive hundreds of times a second: redraw at most every 100 ms for data.
+let lastData = 0;
+let dataTimer: ReturnType<typeof setTimeout> | null = null;
+function onData() {
+    const wait = lastData + 100 - performance.now();
+    if (wait > 0) { dataTimer ??= setTimeout(() => { dataTimer = null; onData(); }, wait); return; }
+    lastData = performance.now();
+    refreshStatus();
+    applyChartOptions();
+    chart.requestRender();
+}
+
+function refreshStatus() {
+    const s = session;
+    if (!s) return;
+    const st = s.status;
+    if (st.phase === 'error') topbar.setStatus('Connection problem', 'error');
+    else if (st.phase === 'loading') topbar.setStatus('Loading', 'loading');
+    else if (st.phase === 'backfilling') topbar.setStatus(`Loading trades ${st.backfillPct}%`, 'loading');
+    else topbar.setStatus(st.coveredFrom ? `Real from ${hhmm(st.coveredFrom)}` : 'Live', 'live');
+    const last = s.candles[s.candles.length - 1];
+    if (last) {
+        const dec = decimalsOf(s.tickSize || 1);
+        topbar.setPrice(last.c, dec);
+        document.title = `${last.c.toFixed(dec)} · ${s.symbol} · Rumesh Tape`;
+    }
+}
+
+async function startSession() {
+    const old = session;
+    session = null;
+    if (old) void old.stop();
+    const s = new MarketSession({
+        symbol: settings.symbol, tf: settings.tf, historyHours: settings.historyHours,
+        rest, cache, onChange: () => { if (session === s) onData(); },
+    });
+    session = s;
+    autoBig = { at: 0, value: 100_000 };
+    chart.source = sourceFor(s);
+    chart.resetView();
+    topbar.setStatus('Loading', 'loading');
+    try {
+        await s.start();
+        if (session !== s) return;
+        topbar.setRowOptions(s.bin, s.rowMult('auto'), decimalsOf(s.bin));
+        onData();
+    } catch (e) {
+        if (session !== s) return;
+        console.error(e);
+        topbar.setStatus('Connection problem', 'error');
+    }
+}
+
+async function apply(patch: Partial<Settings>) {
+    if (patch.symbol && patch.symbol !== settings.symbol) {
+        // Check the symbol before dropping the one that works.
+        try {
+            await rest.exchangeInfo(patch.symbol);
+            topbar.setSymbolError(null);
+        } catch (e) {
+            topbar.setSymbolError(e instanceof UnknownSymbolError ? 'Unknown symbol' : 'Could not check symbol');
+            return;
+        }
+    }
+    const restart = (['symbol', 'tf', 'historyHours'] as const).some((k) => k in patch && patch[k] !== settings[k]);
+    settings = { ...settings, ...patch };
+    saveSettings(settings, localStorage);
+    topbar.sync(settings);
+    applyChartOptions();
+    if (restart) await startSession();
+    else chart.requestRender();
+}
+
+async function boot() {
+    applyChartOptions();
+    try { cache = await TradeCache.open(); } catch (e) { console.warn('IndexedDB unavailable, trades will not be cached', e); }
+    await startSession();
+}
+
+window.addEventListener('pagehide', () => { void session?.stop(); });
+
+// Debug handle (used by the browser smoke test).
+(window as unknown as { __rt: unknown }).__rt = {
+    get session() { return session; },
+    get settings() { return settings; },
+    chart,
+};
+
+void boot();

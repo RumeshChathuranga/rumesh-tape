@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MinuteStore } from '../src/model/minutes';
-import { groupPrints } from '../src/model/prints';
+import { groupPrints, printThreshold } from '../src/model/prints';
 import type { AggTrade } from '../src/model/types';
 
 const T0 = Date.UTC(2026, 10, 24, 12, 0, 0);
@@ -111,5 +111,17 @@ describe('dirty tracking and persistence', () => {
         expect(r.coveredFrom()).toBe(s.coveredFrom());
         expect([...r.cellsBetween(T0, T0 + 120_000)]).toEqual([...s.cellsBetween(T0, T0 + 120_000)]);
         expect(r.applyNewer([tr(3, 100, 1, 'buy', T0 + 62_000)])).toEqual({ ok: true });
+    });
+});
+
+describe('printThreshold', () => {
+    const p = (notional: number) => ({ firstId: 0, lastId: 0, time: 0, side: 'buy' as const, qty: 1, notional, vwap: 1, levels: 1 });
+    it('keeps only the largest half percent of prints', () => {
+        const prints = Array.from({ length: 1000 }, (_, i) => p((i + 1) * 1000));
+        expect(printThreshold(prints)).toBe(996_000);
+    });
+    it('never goes below the floor, even with few prints', () => {
+        expect(printThreshold([p(10), p(20)])).toBe(50_000);
+        expect(printThreshold([])).toBe(50_000);
     });
 });

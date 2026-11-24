@@ -59,3 +59,13 @@ export function groupPrints(trades: AggTrade[]): Print[] {
     if (g) out.push(toPrint(g));
     return out;
 }
+
+/**
+ * "Big trade" size for a market: the notional only the largest `1 − q` of
+ * recent prints reach, never below `floor` (USD).
+ */
+export function printThreshold(prints: Print[], q = 0.995, floor = 50_000): number {
+    if (!prints.length) return floor;
+    const n = prints.map((p) => p.notional).sort((a, b) => a - b);
+    return Math.max(floor, n[Math.min(n.length - 1, Math.floor(q * n.length))]);
+}
