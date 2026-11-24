@@ -15,6 +15,7 @@ export const WS_PUBLIC = 'wss://fstream.binance.com/public/stream?streams=';
 const MAX_CACHE_GAP = 60_000;
 const SAVE_EVERY_MS = 60_000;
 const RESYNC_MIN_MS = 3_000;
+const MAX_BACKFILL_TRIES = 5;
 /** Higher timeframes loaded for context (fair value gaps), refreshed by REST. */
 const HTF: Timeframe[] = ['1h', '4h'];
 const HTF_REFRESH_MS = 60_000;
@@ -41,6 +42,8 @@ export interface SessionOptions {
     WebSocketImpl?: typeof WebSocket;
     now?: () => number;
     onChange: () => void;
+    /** Pause before retrying a failed request (ms). */
+    retryMs?: number;
 }
 
 const isAbort = (e: unknown) => (e as { name?: string })?.name === 'AbortError';
@@ -176,10 +179,20 @@ export class MarketSession {
         if (!store) return;
         const anchorTime = store.lastTime ?? this.now();
         try {
-            await backfillOlder(this.o.rest, this.symbol, store, historyStart, {
-                signal: this.ac.signal,
-                onPage: () => { this.updateProgress(historyStart, anchorTime); this.changed(); },
-            });
+            // A dropped request shouldn't end the history load: retry from where it stopped.
+            for (let attempt = 1; ; attempt++) {
+                try {
+                    await backfillOlder(this.o.rest, this.symbol, store, historyStart, {
+                        signal: this.ac.signal,
+                        onPage: () => { this.updateProgress(historyStart, anchorTime); this.changed(); },
+                    });
+                    break;
+                } catch (e) {
+                    if (isAbort(e) || this.stopped || attempt >= MAX_BACKFILL_TRIES) throw e;
+                    console.warn('backfill page failed, retrying', e);
+                    await this.pause();
+                }
+            }
             if (this.stopped) return;
             this.status.phase = 'live';
             this.status.backfillPct = 100;
@@ -191,6 +204,15 @@ export class MarketSession {
             this.status.error = (e as Error).message;
             this.changed();
         }
+    }
+
+    /** Wait `retryMs`, or less if the session stops. */
+    private pause(): Promise<void> {
+        return new Promise((resolve) => {
+            if (this.ac.signal.aborted) { resolve(); return; }
+            const t = setTimeout(resolve, this.o.retryMs ?? 3000);
+            this.ac.signal.addEventListener('abort', () => { clearTimeout(t); resolve(); }, { once: true });
+        });
     }
 
     private updateProgress(historyStart: number, anchorTime: number) {
@@ -233,10 +255,11 @@ export class MarketSession {
         try {
             await fillGap(this.o.rest, this.symbol, this.store, toId, { signal: this.ac.signal });
         } catch (e) {
-            if (!isAbort(e)) console.error('gap fill failed', e);
-        } finally {
-            this.filling = false;
+            if (isAbort(e)) { this.filling = false; return; }
+            console.error('gap fill failed, retrying', e);
+            await this.pause();   // still "filling": newer trades keep queueing
         }
+        this.filling = false;
         if (!this.stopped) await this.drain();
     }
 

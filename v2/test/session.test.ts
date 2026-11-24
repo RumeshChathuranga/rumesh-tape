@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DepthSnapshot } from '../src/data/book';
 import { UnknownSymbolError, type Rest } from '../src/data/rest';
 import { MarketSession } from '../src/data/session';
-import { FakeWS, fakeRest, NOW } from './fakes';
+import { FakeWS, fakeRest, NOW, range } from './fakes';
 
 const make = (rest: Rest, onChange = () => {}) => new MarketSession({
     symbol: 'BTCUSDT', tf: '5m', historyHours: 0.1, rest,
@@ -97,6 +97,35 @@ describe('higher-timeframe candles', () => {
         const s = new MarketSession({ symbol: 'BTCUSDT', tf: '4h', historyHours: 0.1, rest: fakeRest().rest, WebSocketImpl: FakeWS as unknown as typeof WebSocket, now: () => NOW, onChange: () => {} });
         await s.start();
         expect(Object.keys(s.htf)).toEqual([]);
+        await s.stop();
+    });
+});
+
+describe('network failures', () => {
+    it('waits before retrying a failed gap fill instead of looping', async () => {
+        const { rest, fromCalls } = fakeRest({ from: async () => { throw new Error('offline'); } });
+        const s = make(rest);
+        await s.start();
+        fromCalls.length = 0;
+        market().push(aggMsg(2005));
+        await new Promise((r) => setTimeout(r, 200));
+        expect(fromCalls.length).toBeLessThanOrEqual(1);
+        await s.stop();
+    });
+
+    it('keeps loading history after one failed page', async () => {
+        let fails = 1;
+        const { rest } = fakeRest({ from: async (fromId) => {
+            if (fails-- > 0) throw new Error('blip');
+            return range(fromId, Math.min(fromId + 1000, 2000));
+        } });
+        const s = new MarketSession({
+            symbol: 'BTCUSDT', tf: '5m', historyHours: 1, rest, retryMs: 10,
+            WebSocketImpl: FakeWS as unknown as typeof WebSocket, now: () => NOW, onChange: () => {},
+        });
+        await s.start();
+        await vi.waitFor(() => expect(s.status.phase).toBe('live'), { timeout: 2000 });
+        expect(s.store!.firstId).toBe(0);
         await s.stop();
     });
 });
