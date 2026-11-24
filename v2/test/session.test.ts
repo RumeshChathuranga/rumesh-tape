@@ -2,45 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DepthSnapshot } from '../src/data/book';
 import { UnknownSymbolError, type Rest } from '../src/data/rest';
 import { MarketSession } from '../src/data/session';
-import type { AggTrade } from '../src/model/types';
-
-const NOW = Date.UTC(2026, 10, 24, 12, 0, 0);
-
-class FakeWS {
-    static all: FakeWS[] = [];
-    onopen: ((e: unknown) => void) | null = null;
-    onmessage: ((e: { data: string }) => void) | null = null;
-    onclose: ((e: unknown) => void) | null = null;
-    onerror: ((e: unknown) => void) | null = null;
-    closed = false;
-    constructor(readonly url: string) {
-        FakeWS.all.push(this);
-        queueMicrotask(() => this.onopen?.({}));
-    }
-    close() { this.closed = true; }
-    push(obj: unknown) { this.onmessage?.({ data: JSON.stringify(obj) }); }
-}
-
-/** Trades with ids 0..1999, one per second, the newest one second before NOW. */
-const trade = (id: number): AggTrade => ({ id, price: 60000, qty: 1, time: NOW - (2000 - id) * 1000, buyerMaker: id % 2 === 0 });
-const range = (from: number, to: number) => Array.from({ length: Math.max(0, to - from) }, (_, i) => trade(from + i));
-
-function fakeRest(depth: () => Promise<DepthSnapshot> = async () => ({ lastUpdateId: 100, bids: [['59999', '1']], asks: [['60001', '1']] })) {
-    const fromCalls: number[] = [];
-    const rest: Rest = {
-        async exchangeInfo(symbol) {
-            if (symbol !== 'BTCUSDT') throw new UnknownSymbolError(symbol);
-            return { tickSize: 0.1 };
-        },
-        async klines() {
-            return [0, 1, 2].map((i) => ({ t: NOW - (3 - i) * 300_000, o: 60000, h: 60010, l: 59990, c: 60000, v: 10, buyV: 5 }));
-        },
-        async aggTradesLatest() { return range(1000, 2000); },
-        async aggTradesFrom(_s, fromId) { fromCalls.push(fromId); return range(fromId, Math.min(fromId + 1000, 5000)); },
-        depth,
-    };
-    return { rest, fromCalls };
-}
+import { FakeWS, fakeRest, NOW } from './fakes';
 
 const make = (rest: Rest, onChange = () => {}) => new MarketSession({
     symbol: 'BTCUSDT', tf: '5m', historyHours: 0.1, rest,
@@ -112,7 +74,7 @@ describe('MarketSession', () => {
     it('syncs the book from buffered depth events and a snapshot', async () => {
         let release!: (s: DepthSnapshot) => void;
         const snapshot = new Promise<DepthSnapshot>((r) => { release = r; });
-        const s = make(fakeRest(() => snapshot).rest);
+        const s = make(fakeRest({ depth: () => snapshot }).rest);
         await s.start();
         pub().push({ stream: 'btcusdt@depth@100ms', data: { e: 'depthUpdate', U: 96, u: 101, pu: 95, b: [['59998', '2']], a: [] } });
         release({ lastUpdateId: 100, bids: [['59999', '1']], asks: [['60001', '1']] });
