@@ -11,6 +11,7 @@ import { Chart, type ChartSource } from './render/chart';
 import { drawFvgs } from './render/fvg';
 import { drawLevels } from './render/levels';
 import { Alerts } from './ui/alerts';
+import { openGuideOnce } from './ui/guide';
 import { ScalpPanel } from './ui/scalp';
 import { loadSettings, saveSettings, type Settings } from './ui/settings';
 import { Topbar } from './ui/topbar';
@@ -73,6 +74,8 @@ function fvgs(): Fvg[] {
 let tracker = new ZoneTracker();
 let zones: Zone[] = [];
 let latestSetup: Setup | null = null;
+/** The strategy's bias (15m gaps, else the chart's), shown in both the top bar and the panel. */
+let strategyBias: 'bullish' | 'bearish' | null = null;
 let scalpAt = 0;
 let scanFrom = 0;
 function scalpTick(force = false) {
@@ -92,6 +95,7 @@ function scalpTick(force = false) {
     for (const [tf, cs] of Object.entries(s.htf)) if (cs) htfFvgs.push(...findFvgs(cs, tf as Fvg['tf']));
     if (TF_MS[s.tf] >= TF_MS['15m']) htfFvgs.push(...findFvgs(s.candles, s.tf));
     const bias = fvgBias(findFvgs(s.htf['15m'] ?? (s.tf === '15m' ? s.candles : []), '15m')) ?? fvgMemo.bias;
+    strategyBias = bias;
     zones = buildZones({ price, fvgs: htfFvgs, profiles: s.context.profiles, nakedPocs: s.context.nakedPocs, bias, tolerance: s.bin * s.rowMult('auto') });
     const dec = decimalsOf(s.tickSize || 1);
     for (const z of tracker.update(zones, lo, hi, now)) {
@@ -147,7 +151,7 @@ function onData() {
     refreshStatus();
     fvgs();
     scalpTick();
-    topbar.setBias(settings.fvg === 'off' ? null : fvgMemo.bias);
+    topbar.setBias(strategyBias);
     applyChartOptions();
     chart.requestRender();
 }
@@ -180,6 +184,7 @@ async function startSession() {
     tracker = new ZoneTracker();
     zones = [];
     latestSetup = null;
+    strategyBias = null;
     scanFrom = 0;
     autoBig = { at: 0, value: 100_000 };
     fvgMemo = { at: 0, v: -1, h: -1, list: [], bias: null };
@@ -224,6 +229,7 @@ async function boot() {
     scalpHost.hidden = !settings.showScalp;
     applyChartOptions();
     try { cache = await TradeCache.open(); } catch (e) { console.warn('IndexedDB unavailable, trades will not be cached', e); }
+    openGuideOnce();
     await startSession();
 }
 
